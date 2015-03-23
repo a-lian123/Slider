@@ -11,6 +11,7 @@
 ![例子](http://test.wzlian.me/slider/images/demo.png)
 点击链接[enter link description here](http://test.wzlian.me/slider/demo/index.html)
 
+-------------------------------------------
 ###调用方法
 引入Zepto.js
 
