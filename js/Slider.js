@@ -7,15 +7,15 @@
 */
 
 
-;(function ($){
+;(function($){
 	'use strict';	
-	$.slider =function (options,callback){
+	$.slider = function(options,callback){
 
 		var Slider = {
 			setting:{
 				imgAry  : [],        //图片数组
 				hasDot  : true,      //是否有点点
-				isLoop  : true,       //是否有循环
+				isLoop  : false,     //是否有循环
 				indexNow: 0          //开始的位置
 			},
 			init: function (data, callback){
