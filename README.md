@@ -17,7 +17,7 @@
 
 ```
 $.slider({
-	imgAry: [pic1.jpg, pic2.jpg, pic3.jpg, pic4.jpg],//图片数组
+	imgAry: ['pic1.jpg', 'pic2.jpg', 'pic3.jpg', 'pic4.jpg'],//图片数组
 	isLoop:	false,                                   //是否能循环滑动，默认为false
 	hasDot: true,                                    //是否有下面的点点，默认为true
 	indexNow: 0                                      //当前的图片顺序,默认为0，从0开始
