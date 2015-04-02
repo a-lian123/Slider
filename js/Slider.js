@@ -54,23 +54,16 @@
 				//生成图片列表
 				this.render();
 
+				//绑定事件
+				this.onEvent();
+
 
 			},
-			onload: function(){
+			onload: function(e){
 				this.loadNum++;
-
+				console.log(this.loadNum);
+				this.initImg($(e.target))
 				if(this.loadNum == this.liLength){
-					this.$loading.remove();
-
-					//初始化图片尺寸
-					this.initImg();
-
-					//显示图片列表
-					this.$ul.show();
-
-					//绑定事件
-					this.onEvent();
-
 					//回调
 					if(callback) callback();
 				}
@@ -79,7 +72,6 @@
 				var that = this;
 				//生成基本元素
 				var html = '<div class="slide-wrapper" id="J-slide-wrapper">'+
-								'<span class="slide-tips" id="J-slide-load">加载中...</span>'+
 	                        	'<ul class="slide"></ul>'+
 	     						'<ul class="slide-nav"></ul>'+
 		                        '<span class="slide-close" id="J-slide-colse">关闭</span>'+
@@ -88,7 +80,6 @@
 		        this.$close        = this.$el.find('#J-slide-colse');
 				this.$ul           = this.$el.find('.slide');
 				this.$nav          = this.$el.find('.slide-nav');
-				this.$loading      = this.$el.find('#J-slide-load');
 				this.liWidth	   = this.winWidth;
 				this.ulWidth       = this.setting.isLoop ? this.liWidth * (this.liLength + 2) : this.liWidth * this.liLength ; 
 				//添加进body
@@ -106,8 +97,9 @@
 					this.$navli.eq(0).addClass('on');
 				}
 
+				var scrollTop = $('body').scrollTop();
 				//最大化
-				this.$el.css({'width' : this.winWidth,'height' : this.winHeight}).show();
+				this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop}).show();
 				
 				//初始化slider的宽度 
 				this.$ul.css({'width' : this.ulWidth + 'px'});
@@ -132,13 +124,13 @@
 				//生成图片列表
 				for(var i = 0; i < this.liLength; i++){
 					if(i == 0 && this.setting.isLoop){
-						imgHtml += '<li class="Route"><img src="' + this.setting.imgAry[this.liLength - 1] + '" /></li>';
+						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[this.liLength - 1] + '" /></li>';
 					}
 
-					imgHtml += '<li class="Route"><img src="'+ this.setting.imgAry[i] + '" /></li>';
+					imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
 		       		
 		       		if(i == this.liLength - 1 && this.setting.isLoop){
-		       			imgHtml += '<li class="Route"><img src="' + this.setting.imgAry[0] + '" /></li>';
+		       			imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[0] + '" /></li>';
 		       		}
 				}
 				this.$ul.append(imgHtml);
@@ -150,26 +142,27 @@
 				});
 			},
 			//初始化图片尺寸
-			initImg: function(){
-				var length = this.setting.isLoop?this.liLength + 2 : this.liLength;
-				for(var i = 0; i < length; i++){
-					var $img = this.$imgs.eq(i);
-					var imgHeight = $img[0].naturalHeight;
-					var imgWidth  = $img[0].naturalWidth;
-					if(!(imgWidth && imgHeight)){
-						$img.parent().html('<span class="slide-tips">加载失败</span>');
-					}else if(imgHeight > imgWidth){
+			initImg: function($target){
+				var imgHeight = $target[0].naturalHeight;
+				var imgWidth  =$target[0].naturalWidth;
+				if(!(imgWidth && imgHeight)){
+					$target.html('<span class="slide-tips">加载失败</span>');
+				}else{
+					if(imgHeight > imgWidth){
 						var scaleH = this.winHeight/imgHeight;
 						var scaleW = this.winWidth/imgWidth;
 
 						if(scaleW * imgHeight > this.winHeight ){
-							$img.css({'width': imgWidth * scaleH ,'height': this.winHeight});
+							$target.css({'width': imgWidth * scaleH ,'height': this.winHeight});
 						}else{
-							$img.css({'width': this.winWidth , 'height': imgHeight * scaleW});
+							$target.css({'width': this.winWidth , 'height': imgHeight * scaleW});
 						}
+						
+					}	
+					$target.prev().remove();
+					$target.show();
+				} 
 
-					}
-				}
 			},
 			onEvent: function(){
 				var that = this;
