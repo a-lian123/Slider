@@ -72,12 +72,12 @@
 				var that = this;
 				//生成基本元素
 				var html = '<div class="slide-wrapper" id="J-slide-wrapper">'+
-	                        	'<ul class="slide"></ul>'+
-	     						'<ul class="slide-nav"></ul>'+
-		                        '<span class="slide-close" id="J-slide-colse">关闭</span>'+
-		                   '</div>';
-		        this.$el           = $(html);
-		        this.$close        = this.$el.find('#J-slide-colse');
+								'<ul class="slide"></ul>'+
+								'<ul class="slide-nav"></ul>'+
+								'<span class="slide-close" id="J-slide-colse">关闭</span>'+
+							'</div>';
+				this.$el           = $(html);
+				this.$close        = this.$el.find('#J-slide-colse');
 				this.$ul           = this.$el.find('.slide');
 				this.$nav          = this.$el.find('.slide-nav');
 				this.liWidth	   = this.winWidth;
@@ -97,7 +97,7 @@
 					this.$navli.eq(0).addClass('on');
 				}
 
-				var scrollTop = $('body').scrollTop();
+				var scrollTop = $(window).scrollTop();
 				//最大化
 				this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop}).show();
 				
@@ -128,10 +128,10 @@
 					}
 
 					imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
-		       		
-		       		if(i == this.liLength - 1 && this.setting.isLoop){
-		       			imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[0] + '" /></li>';
-		       		}
+					
+					if(i == this.liLength - 1 && this.setting.isLoop){
+						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[0] + '" /></li>';
+					}
 				}
 				this.$ul.append(imgHtml);
 				this.$imgs = this.$ul.find('img');
@@ -263,7 +263,7 @@
 
 				var l = this.moveLength;
 				var canMovePre =  this.indexNow != 0 || this.setting.isLoop,
-				    canMoveNext = this.indexNow != this.liLength - 1 || this.setting.isLoop;
+					canMoveNext = this.indexNow != this.liLength - 1 || this.setting.isLoop;
 
 				if(l < 0 && Math.abs(l) > this.liWidth/3 && canMoveNext){
 					console.log('moveToLeft');
@@ -357,10 +357,10 @@
 				  	
 					setTimeout(function(){
 						that.transform(0, -(that.indexNow) * that.liWidth, 0, 1, 'auto', that.$ul);
-	                },200);
+	 				},200);
 				}
 
-	            //点点
+				//点点
 				if(this.setting.hasDot){
 					this.$navli.removeClass('on');
 					this.$navli.eq(this.indexNow).addClass('on');
@@ -381,10 +381,10 @@
 				  
 					setTimeout(function(){
 						that.transform( 0, 0, 0, 1, 'auto',that.$ul);
-	                },200);
-	            }	
+					},200);
+				}	
 
-	            //点点
+				//点点
 				if(this.setting.hasDot){
 					this.$navli.removeClass('on');
 					this.$navli.eq(this.indexNow).addClass('on');
@@ -397,21 +397,21 @@
 					'-webkit-transform' : 'translate3d(' + positionX + 'px, '+ positionY +'px, 0px) scale('+ scale +')',
 					'transition'        : 'all 0.'+ duration +'s cubic-bezier(0.22, 0.69, 0.72, 0.88)',
 					'-webkit-transition': 'all 0.'+ duration +'s cubic-bezier(0.22, 0.69, 0.72, 0.88)',
-		            'transform-origin'  		: origin,
+					'transform-origin'  		: origin,
 					'-webkit-transform-origin'  : origin
 				});
 			},
 			fingersDistance:function(touches){
 				var e0 = touches[0] || {},
-	            e1 = touches[1] || {},
-	            x0 = e0.clientX || 0,
-	            x1 = e1.clientX || 0,
-	            y0 = e0.clientY || 0,
-	            y1 = e1.clientY || 0,
-	            disX = Math.abs(x0 - x1),
-	            disY = Math.abs(y0 - y1);
+				e1 = touches[1] || {},
+				x0 = e0.clientX || 0,
+				x1 = e1.clientX || 0,
+				y0 = e0.clientY || 0,
+				y1 = e1.clientY || 0,
+				disX = Math.abs(x0 - x1),
+				disY = Math.abs(y0 - y1);
 
-	       		return Math.sqrt(disX * disX + disY * disY);
+				return Math.sqrt(disX * disX + disY * disY);
 			},
 			destory:function(e){
 				if(this.$close){
@@ -424,7 +424,7 @@
 				}
 				if(this.$el){
 					this.$el.off('touchstar touchmove touchend').remove();
-	           		this.$el = null;
+					this.$el = null;
 				}
 				
 			},
