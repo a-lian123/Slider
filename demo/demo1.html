@@ -26,11 +26,11 @@
 </div>
 
 <script src="../js/zepto.min.js"></script>
-<script src="../js/Slider.min.js"></script>
+<script src="../js/Slider.js"></script>
 <script>
 $(function(){
 	
-	//图片cover
+	//图片cover代码，与插件无关
 	$('img').each(function(){
 		var imgW = $(this).width(),
 			imgH = $(this).height(),
@@ -44,9 +44,10 @@ $(function(){
 
 	$('#J-imgAry').on('touchstart',function(e){
 		var $target = $(e.target).parent(),
-			index   = $target.index();
+			index   = $target.index() + 1;
 		if($target[0].tagName.toLowerCase() !== "li") return;
 
+		//插件主要代码
 		$.slider({
 			imgAry: ['../images/1408219308583895419.jpg', 
 					'../images/1817202449744335681.jpg',

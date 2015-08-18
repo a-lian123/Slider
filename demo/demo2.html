@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-chm">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, width=device-width">
+	<title>Slide Demo</title>
+	<link rel="stylesheet" href="../css/slider.css">
+	<style>
+		body{height: 1000px;}
+		h1{font-family: "Hiragino Sans GB", "Hiragino Sans GB W3", "Microsoft YaHei", "Î¢ï¿½ï¿½ï¿½Åºï¿½", tahoma, arial, simsun, "ï¿½ï¿½ï¿½ï¿½";width: 70%;margin: 0 auto;text-align: center;margin-top: 20px;line-height: 58px;font-size: 23px; border-bottom: 1px solid #ddd;color: #808080;}
+		.wrapper {width: 90%;position: relative;height: 200px;margin: 0 auto;}
+		.imgAry{width:100%;height: 100%;}
+		.imgAry li{height:100%;position: relative;}
+		.imgAry img{width: 100%;display: block;}
+	</style>
+</head>
+<body>
+<h1>Slider-点击图片显示</h1>
+<div class="wrapper">
+	<ul class="imgAry" id="J-imgAry">
+		<li><img src="../images/1408219308583895419.jpg" alt="1"></li>
+		<li><img src="../images/1817202449744335681.jpg" alt="2"></li>
+		<li><img src="../images/6204762820111109095629050_640.jpg" alt="3"></li>
+		<li><img src="../images/6597343545054048507.jpg" alt="4"></li>
+		<li><img src="../images/Funny_Kitty_Balanc_e.jpg" alt="5"></li>
+		<li><img src="../images/images.jpg" alt="6"></li>
+	</ul>
+</div>
+
+<script src="../js/zepto.min.js"></script>
+<script src="../js/Slider.js"></script>
+<script>
+$(function(){
+	
+	//图片cover代码，与插件无关
+	$('img').each(function(){
+		var imgW = $(this).width(),
+			imgH = $(this).height(),
+			liH = $('li').height(),
+			liW = $('li').width();
+		if(liH > imgH){
+			var scale = liH/imgH;
+			$(this).css({'width' : scale * imgW, 'height' : liH});
+		}
+	});
+
+	$.slider({
+		isLoop: true,  //是都循环播放
+		hasDot: true, //是否有点点
+		$el: $('.wrapper'), //最外层的节点
+		isFullScreen:false, //是否全屏
+		autoSlide: true     //是否自动滑动
+	});
+});
+</script>
+</body>
+</html>

@@ -16,88 +16,102 @@
 				imgAry  : [],        //图片数组
 				hasDot  : true,      //是否有点点
 				isLoop  : false,     //是否有循环
-				indexNow: 0          //开始的位置
+				indexNow: 0,         //开始的位置
+				isFullScreen: true,  //是否全屏
+				$el     : null,      //最外层元素
+				autoSlide: false     //是否自动滑动   
 			},
+			$el        : null,
+			$close     : null,
+			$ul        : null,
+			$li        : null,
+			$nav       : null,
+			$navli     : null,
+			$imgs      : null,                              
+			liLength   : 0,
+			liWidth    : 0,
+			ulWidth    : 0, 
+			indexNow   : 0,                                  //目前的index
+			winWidth   : 0,                                  //屏幕宽度
+			winHeight  : 0,                                  //屏幕高度
+			loadNum    : 0,                                  //加载的图片数量
+			initFingerDis : 0,                               //两个手指之间的距离
+			isScale       : false,                           //是否正在缩放
+			isSliding     : false,                           //是否正在滑动
+			initImgMoveX  : 0,                               //图片放大的时候初始触摸的X
+			initImgMoveY  : 0,	                             //图片放大的时候初始触摸的Y
+			lastImgMoveX  : 0,                               //图片放大的时候移动的X
+			lastImgMoveY  : 0,	                             //图片放大的时候移动的Y
+			lastSlideX    : 0,                               //滑动的时候X的坐标
+			initSlideX    : 0,                               //滑动触摸时手指的x坐标	
+			minScale      : 1.3,                             //图片最小缩放倍数
+			maxScale      : 3,                               //图片最大缩放倍数
+			scaleArg      : 1,                               //图片缩放率
+			finalScale    : 1,                               //最终的缩放率
+			moveX         : 0,                               //最终的移动X
+			moveY         : 0,                               //最终的移动Y
+			scale         : 1,                               //缩放的比例
 			init: function (data, callback){
-				var that           = this;
-				this.$el 		   = null;
-				this.$close        = null;
-				this.$ul           = null;
-				this.$li           = null;
-				this.$nav          = null;
-				this.$navli        = null;
-				this.$imgs	       = null;                              
-				this.liLength      = this.setting.imgAry.length;
-				this.liWidth	   = 0;
-				this.ulWidth       = 0; 
-				this.indexNow      = this.setting.indexNow || 0;         //目前的index
-				this.winWidth	   = $(window).width();                  //屏幕宽度
-				this.winHeight 	   = $(window).height();                 //屏幕高度
-				this.loadNum       = 0;                                  //加载的图片数量
-				this.initFingerDis = 0;                                  //两个手指之间的距离
-				this.isScale       = false;                              //是否正在缩放
-				this.isMove        = false;                              //是否正在滑动
-				this.initImgMoveX  = 0;                                  //图片放大的时候初始触摸的X
-				this.initImgMoveY  = 0;	                                 //图片放大的时候初始触摸的Y
-				this.lastImgMoveX  = 0;                                  //图片放大的时候移动的X
-				this.lastImgMoveY  = 0;	                                 //图片放大的时候移动的Y
-				this.lastSlideX    = 0;                                  //滑动的时候X的坐标
-				this.initSlideX    = 0;                                  //滑动触摸时手指的x坐标	
-				this.minScale	   = 1.3;                                //图片最小缩放倍数
-				this.maxScale      = 3;                                  //图片最大缩放倍数
-				this.scaleArg      = 1;                                  //图片缩放率
-				this.finalScale    = 1;                                  //最终的缩放率
-				this.moveX         = 0;                                  //最终的移动X
-				this.moveY         = 0;                                  //最终的移动Y
-				this.scale         = 1;                                  //缩放的比例
+				var that = this;
+				this.$el = this.setting.$el || null;
 
-				//生成图片列表
+				this.winWidth = $(window).width();
+				this.winHeight =  $(window).height();
+
+				if(this.setting.indexNow > 0) this.indexNow = this.setting.indexNow -1;
+				
+				this.liLength      = this.setting.imgAry.length || this.$el.find('li').length;
+				this.liWidth	   = this.setting.isFullScreen ? this.winWidth : this.$el.width();
+				this.ulWidth       = this.setting.isLoop ? this.liWidth * (this.liLength + 2) : this.liWidth * this.liLength ; 
+
+				//渲染
 				this.render();
 
 				//绑定事件
 				this.onEvent();
 
-
-			},
-			onload: function(e){
-				this.loadNum++;
-				console.log(this.loadNum);
-				this.initImg($(e.target))
-				if(this.loadNum == this.liLength){
-					//回调
-					if(callback) callback();
-				}
+				//自动滑动
+				this.autoSlide();
 			},
 			render: function(){
+				//根据是否全屏进行渲染
+				if(this.setting.isFullScreen){
+					this.fullScreenRender();
+				}else{
+					this.notfullScreenRender();
+				}
+			},
+			onEvent: function(){
 				var that = this;
+				//滑动
+				this.$el.on('touchstart doubleTap',function(e){
+					that.onTouchEvent.call(that,e);
+				});
+			
+			},
+			//初始化全屏
+			fullScreenRender: function(){
+				var that = this,
+					scrollTop = $(window).scrollTop();
+
 				//生成基本元素
 				var html = '<div class="slide-wrapper" id="J-slide-wrapper">'+
 								'<ul class="slide"></ul>'+
-								'<ul class="slide-nav"></ul>'+
 								'<span class="slide-close" id="J-slide-colse">关闭</span>'+
 							'</div>';
 				this.$el           = $(html);
 				this.$close        = this.$el.find('#J-slide-colse');
-				this.$ul           = this.$el.find('.slide');
-				this.$nav          = this.$el.find('.slide-nav');
-				this.liWidth	   = this.winWidth;
-				this.ulWidth       = this.setting.isLoop ? this.liWidth * (this.liLength + 2) : this.liWidth * this.liLength ; 
+				this.$ul           = this.$el.find('ul');
+			
 				//添加进body
 				$('body').append(this.$el);
 
 				//插入图片
 				this.appendImg();
 
-				//生成点点
-				if(this.setting.hasDot){
-					for(var i = 0; i < this.liLength; i++){
-						this.$nav.append('<li></li>');	
-					}
-					this.$navli =  this.$el.find('.slide-nav li');
-					this.$navli.eq(0).addClass('on');
-				}
+				//插入点点
+				this.appendDot();
 
-				var scrollTop = $(window).scrollTop();
 				//最大化
 				this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop}).show();
 				
@@ -105,17 +119,73 @@
 				this.$ul.css({'width' : this.ulWidth + 'px'});
 
 				//定位slide
-				if(this.setting.isLoop) this.$ul.css('left',-this.liWidth + 'px');
-				this.transform(0, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
-				if(this.setting.hasDot){
-					this.$navli.removeClass('on');
-					this.$navli.eq(this.indexNow).addClass('on');
-				}
-
+				this.locUl();
+				
 				//设置li宽度
-				this.$li = this.$el.find('.slide li');
+				this.$li = this.$ul.find('li');
 				this.$li.css({'width' : this.liWidth + 'px'});
 
+			},
+			//初始化简单幻灯片
+			notfullScreenRender: function(){
+				this.$ul           = this.$el.find('ul');
+				this.$li           = this.$el.find('li');
+				this.$ul.css({'width' : this.ulWidth + 'px'});
+				this.$li.css({'width' : this.liWidth + 'px'});
+
+				this.$el.addClass('slide-wrapper_n');
+
+				if(this.setting.isLoop){
+					this.$li.eq(0).before(this.$li.eq(this.liLength - 1).clone());
+					this.$ul.append(this.$li.eq(0).clone());
+				}
+
+				//添加点点
+				this.appendDot();
+
+				//定位ul
+				this.locUl();
+			},
+			imgOnload: function(e){
+				this.loadNum++;
+				this.initImg($(e.target))
+				if(this.loadNum == this.liLength){
+					//回调
+					if(callback) callback();
+				}
+			},
+			autoSlide: function(){
+				var that = this;
+				if(this.setting.autoSlide || !this.setting.isFullScreen){
+					this.timer = setInterval(function(){
+						if(!that.setting.isLoop && (that.indexNow == that.liLength - 1)){
+							that.indexNow = -1;
+						}
+						that.movenext();
+					},3000);
+				}
+			},
+			//定位slide
+			locUl: function(){
+				if(this.setting.isLoop){
+					this.$ul.css('left',-this.liWidth + 'px');
+				}
+				//根据index初始化位置
+				this.transform(0, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
+			},
+			appendDot: function(){
+				//生成点点
+				if(this.setting.hasDot){
+					this.$el.append('<ul class="slide-nav"></ul>');
+					this.$nav = this.$el.find('.slide-nav');
+					
+					for(var i = 0; i < this.liLength; i++){
+						this.$nav.append('<li></li>');	
+					}
+					
+					this.$navli =  this.$nav.find('li');
+					this.$navli.eq(this.indexNow).addClass('on');
+				}
 			},
 			appendImg: function(){
 				var imgHtml = '',
@@ -138,13 +208,13 @@
 
 				//设置img事件
 				this.$imgs.on('load error emptied stalled',function(e){
-					that.onload.call(that,e);
+					that.imgOnload.call(that,e);
 				});
 			},
 			//初始化图片尺寸
 			initImg: function($target){
 				var imgHeight = $target[0].naturalHeight;
-				var imgWidth  =$target[0].naturalWidth;
+				var imgWidth  = $target[0].naturalWidth;
 				if(!(imgWidth && imgHeight)){
 					$target.html('<span class="slide-tips">加载失败</span>');
 				}else{
@@ -164,14 +234,6 @@
 				} 
 
 			},
-			onEvent: function(){
-				var that = this;
-				//滑动
-				this.$el.on('touchstart doubleTap',function(e){
-					that.onTouchEvent.call(that,e);
-				});
-			
-			},
 			onTouchEvent: function(e){
 				var that = this,
 					type = e.type,
@@ -180,6 +242,7 @@
 					scale = 0;
 
 				if (e.preventDefault) e.preventDefault();
+
 				//关闭
 				if($(e.target).attr('id') === 'J-slide-colse'){this.destory(); return;}
 
@@ -187,13 +250,15 @@
 					case 'touchstart':
 						console.log('touchstart');
 						
+						//停止自动播放
+						if(!this.isFullScreen) clearInterval(this.timer);
+
 						//缩放
 						if(touches.length === 2){
 							this.initFingerDis = this.fingersDistance(touches);
 							this.isScale = true;
 						//缩放之后的移动
-						}else if(touches.length === 1 && this.isScale && !this.isMove){
-							this.initImgMoveX = touches[0].clientX - this.moveX;
+						}else if(touches.length === 1 && this.isScale && !this.isSliding){							this.initImgMoveX = touches[0].clientX - this.moveX;
 							this.initImgMoveY = touches[0].clientY - this.moveY; 
 						//滑动的移动
 						}else if(touches.length === 1 && !this.isScale){	
@@ -209,16 +274,15 @@
 						console.log('touchmove');
 
 						//两只手指放大
-						if(touches.length === 2 && !this.isMove){
+						if(touches.length === 2 && !this.isSliding){							
 								this.lastFingerDis = this.fingersDistance(touches);
 								var rate = this.lastFingerDis / this.initFingerDis;
 								this.scale = rate * this.finalScale;
 								this.transform(0, 0, 0, this.scale ,'50% 50%', $zoomTarget);
 						//放大的时候移动图片
-						}else if(touches.length === 1 &&  this.isScale && !this.isMove){
-								this.lastImgMoveX = touches[0].clientX;
+						}else if(touches.length === 1 &&  this.isScale && !this.isSliding){							this.lastImgMoveX = touches[0].clientX;
 								this.lastImgMoveY = touches[0].clientY;
-								this.moveX = this.lastImgMoveX - this.initImgMoveX,
+								this.moveX = this.lastImgMoveX - this.initImgMoveX;
 								this.moveY = this.lastImgMoveY - this.initImgMoveY;
 
 								//移动图片
@@ -226,7 +290,7 @@
 						//滑动
 						}else if(touches.length === 1){
 							//滑动时禁止其他的操作（放大，移动）
-							this.isMove = true;
+							this.isSliding = true;
 							this.lastSlideX = touches[0].clientX;
 							this.moveLength = this.lastSlideX - this.initSlideX;
 							this.transform(0, (-that.indexNow * that.liWidth + that.moveLength), 0, 1, 'auto', this.$ul);
@@ -243,8 +307,11 @@
 						//放大后重置图片位置
 						this.resetImgPosition($zoomTarget);
 						
-						this.$el.off('touchmove touchend');					
+						//如果有自动播放，自动播放
+						if(!this.isFullScreen) this.autoSlide();
 						
+						$zoomTarget = null;
+
 						break;
 					case 'doubleTap':
 						if(this.isScale){
@@ -255,11 +322,12 @@
 							this.transform(3 , 0, 0, 1, '50% 50%', $zoomTarget);
 							this.isScale = false;
 						}
+						$zoomTarget = null;
 						break;
 				}
 			},
 			resetSliderPosition: function(){
-				if(!this.isMove) return;
+				if(!this.isSliding) return;
 
 				var l = this.moveLength;
 				var canMovePre =  this.indexNow != 0 || this.setting.isLoop,
@@ -268,15 +336,14 @@
 				if(l < 0 && Math.abs(l) > this.liWidth/3 && canMoveNext){
 					console.log('moveToLeft');
 					this.movenext();
-					
 				}else if(l > 0 && Math.abs(l) > this.liWidth/3 && canMovePre){
 					console.log('moveToRight');
 					this.moveprev();
-					}else{	
+				}else{	
 					this.transform(3, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
 				}
 
-				this.isMove = false;
+				this.isSliding = false;
 			},
 			resetImgPosition: function($zoomTarget){
 				if(!this.isScale) return;
@@ -349,7 +416,7 @@
 				this.indexNow --;
 
 				//移动
-				this.transform(2, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
+				this.transform(3, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
 
 				if(this.indexNow < 0 && this.setting.isLoop){
 
@@ -373,7 +440,7 @@
 				this.indexNow ++;
 
 				//移动
-				this.transform.call(this, 2, -(this.indexNow) * this.liWidth, 0, 1,  'auto', this.$ul);
+				this.transform(3, -(this.indexNow) * this.liWidth, 0, 1,  'auto', this.$ul);
 
 				if(this.indexNow >= this.liLength && this.setting.isLoop){
 				 	
@@ -427,9 +494,6 @@
 					this.$el = null;
 				}
 				
-			},
-			handleData: function(callback){
-				this.setting.imgAry = callback();
 			}
 		}
 
