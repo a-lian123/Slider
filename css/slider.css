@@ -1,8 +1,8 @@
 /**
 * aouthor: alian wangzhuanglian 654849917@qq.com
-* des    : Slider1.0.0 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform。
+* des    : Slider2.0.0 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform。
 *          Slider1.0是一个我闲暇时间写的zepto插件，用于实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
-* version: 1.0.0 
+* version: 2.0.0 
 */
 body{
 	margin: 0;
