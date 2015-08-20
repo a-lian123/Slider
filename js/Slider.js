@@ -3,23 +3,22 @@
 * des    : Slider2.0.0 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform.
 *          Slider2.0.0 是一个我闲暇时间写的zepto插件，用于实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
 * version: 2.0.0
-* depend : Zepto 1.1.3 + width 'zepto event touch ie'mode  
+* depend : Zepto 1.1.3 + width 'zepto event touch ie'mode
 */
 
 
 ;(function($){
-	'use strict';	
+	'use strict';
 	$.slider = function(options,callback){
-
 		var Slider = {
-			setting:{
+			setting: {
 				imgAry  : [],        //图片数组
 				hasDot  : true,      //是否有点点
 				isLoop  : false,     //是否有循环
 				indexNow: 0,         //开始的位置
 				isFullScreen: true,  //是否全屏
 				$el     : null,      //最外层元素
-				autoSlide: false     //是否自动滑动   
+				autoSlide: false     //是否自动滑动
 			},
 			$el        : null,
 			$close     : null,
@@ -27,10 +26,10 @@
 			$li        : null,
 			$nav       : null,
 			$navli     : null,
-			$imgs      : null,                              
+			$imgs      : null,
 			liLength   : 0,
 			liWidth    : 0,
-			ulWidth    : 0, 
+			ulWidth    : 0,
 			indexNow   : 0,                                  //目前的index
 			winWidth   : 0,                                  //屏幕宽度
 			winHeight  : 0,                                  //屏幕高度
@@ -43,7 +42,7 @@
 			lastImgMoveX  : 0,                               //图片放大的时候移动的X
 			lastImgMoveY  : 0,	                             //图片放大的时候移动的Y
 			lastSlideX    : 0,                               //滑动的时候X的坐标
-			initSlideX    : 0,                               //滑动触摸时手指的x坐标	
+			initSlideX    : 0,                               //滑动触摸时手指的x坐标
 			minScale      : 1.3,                             //图片最小缩放倍数
 			maxScale      : 3,                               //图片最大缩放倍数
 			scaleArg      : 1,                               //图片缩放率
@@ -51,18 +50,16 @@
 			moveX         : 0,                               //最终的移动X
 			moveY         : 0,                               //最终的移动Y
 			scale         : 1,                               //缩放的比例
+			supportOrientation: false,                       //是否支持旋转事件
+			resizetTimer  : null,                            //屏幕大小变化时使用的计时器
 			init: function (data, callback){
 				var that = this;
 				this.$el = this.setting.$el || null;
-
-				this.winWidth = $(window).width();
-				this.winHeight =  $(window).height();
+				this.supportOrientation  = (typeof window.orientation == "number" && typeof window.onorientationchage == "object");
 
 				if(this.setting.indexNow > 0) this.indexNow = this.setting.indexNow -1;
-				
-				this.liLength      = this.setting.imgAry.length || this.$el.find('li').length;
-				this.liWidth	   = this.setting.isFullScreen ? this.winWidth : this.$el.width();
-				this.ulWidth       = this.setting.isLoop ? this.liWidth * (this.liLength + 2) : this.liWidth * this.liLength ; 
+
+				this.liLength = this.setting.imgAry.length || this.$el.find('li').length;
 
 				//渲染
 				this.render();
@@ -87,7 +84,43 @@
 				this.$el.on('touchstart doubleTap',function(e){
 					that.onTouchEvent.call(that,e);
 				});
-			
+				//屏幕旋转
+				if(this.supportOrientation){
+					$(window).on('orientationchange', function(e){
+						that.uodateOrientation, call(that, e);
+					}, false);
+				}else{
+					$(window).resize(function(e){
+						that.uodateOrientation.call(that, e);
+					}, false);
+				}
+			},
+			setW_H: function(resize){
+				var that = this;
+				this.winWidth = $(window).width();
+				this.winHeight =  $(window).height();
+
+				this.liWidth = this.setting.isFullScreen ? this.winWidth : this.$el.width();
+				this.ulWidth = this.setting.isLoop ? this.liWidth * (this.liLength + 2) : this.liWidth * this.liLength;
+
+				this.$ul           = this.$el.find('ul').not('.slide-nav');
+				this.$li           = this.$ul.find('li');
+				this.$ul.css({'width' : this.ulWidth + 'px'});
+				this.$li.css({'width' : this.liWidth + 'px'});
+
+				if(this.setting.isFullScreen){
+					var scrollTop = $(window).scrollTop();
+					//最大化
+					this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop}).show();
+				}
+				if(resize && this.setting.isFullScreen){
+					var $imgs = this.$ul.find('img');
+					$imgs.each(function(i, ele){
+						that.initImg($imgs.eq(i));
+					});
+				}
+				//定位slide
+				this.locUl();
 			},
 			//初始化全屏
 			fullScreenRender: function(){
@@ -102,37 +135,22 @@
 				this.$el           = $(html);
 				this.$close        = this.$el.find('#J-slide-colse');
 				this.$ul           = this.$el.find('ul');
-			
+
 				//添加进body
 				$('body').append(this.$el);
 
 				//插入图片
 				this.appendImg();
 
+				this.setW_H();
+
 				//插入点点
 				this.appendDot();
-
-				//最大化
-				this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop}).show();
-				
-				//初始化slider的宽度 
-				this.$ul.css({'width' : this.ulWidth + 'px'});
-
-				//定位slide
-				this.locUl();
-				
-				//设置li宽度
-				this.$li = this.$ul.find('li');
-				this.$li.css({'width' : this.liWidth + 'px'});
 
 			},
 			//初始化简单幻灯片
 			notfullScreenRender: function(){
-				this.$ul           = this.$el.find('ul');
-				this.$li           = this.$el.find('li');
-				this.$ul.css({'width' : this.ulWidth + 'px'});
-				this.$li.css({'width' : this.liWidth + 'px'});
-
+				this.setW_H();
 				this.$el.addClass('slide-wrapper_n');
 
 				if(this.setting.isLoop){
@@ -178,11 +196,11 @@
 				if(this.setting.hasDot){
 					this.$el.append('<ul class="slide-nav"></ul>');
 					this.$nav = this.$el.find('.slide-nav');
-					
+
 					for(var i = 0; i < this.liLength; i++){
-						this.$nav.append('<li></li>');	
+						this.$nav.append('<li></li>');
 					}
-					
+
 					this.$navli =  this.$nav.find('li');
 					this.$navli.eq(this.indexNow).addClass('on');
 				}
@@ -198,7 +216,7 @@
 					}
 
 					imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
-					
+
 					if(i == this.liLength - 1 && this.setting.isLoop){
 						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[0] + '" /></li>';
 					}
@@ -227,11 +245,11 @@
 						}else{
 							$target.css({'width': this.winWidth , 'height': imgHeight * scaleW});
 						}
-						
-					}	
+
+					}
 					$target.prev().remove();
 					$target.show();
-				} 
+				}
 
 			},
 			onTouchEvent: function(e){
@@ -249,7 +267,7 @@
 				switch(type){
 					case 'touchstart':
 						console.log('touchstart');
-						
+
 						//停止自动播放
 						if(!this.isFullScreen) clearInterval(this.timer);
 
@@ -259,9 +277,9 @@
 							this.isScale = true;
 						//缩放之后的移动
 						}else if(touches.length === 1 && this.isScale && !this.isSliding){							this.initImgMoveX = touches[0].clientX - this.moveX;
-							this.initImgMoveY = touches[0].clientY - this.moveY; 
+							this.initImgMoveY = touches[0].clientY - this.moveY;
 						//滑动的移动
-						}else if(touches.length === 1 && !this.isScale){	
+						}else if(touches.length === 1 && !this.isScale){
 							this.initSlideX = this.lastSlideX = touches[0].clientX;
 							this.moveLength = 0;
 						}
@@ -274,7 +292,7 @@
 						console.log('touchmove');
 
 						//两只手指放大
-						if(touches.length === 2 && !this.isSliding){							
+						if(touches.length === 2 && !this.isSliding){
 								this.lastFingerDis = this.fingersDistance(touches);
 								var rate = this.lastFingerDis / this.initFingerDis;
 								this.scale = rate * this.finalScale;
@@ -295,7 +313,7 @@
 							this.moveLength = this.lastSlideX - this.initSlideX;
 							this.transform(0, (-that.indexNow * that.liWidth + that.moveLength), 0, 1, 'auto', this.$ul);
 						}
-						
+
 						break;
 					case 'touchend':
 						console.log('touchend');
@@ -306,10 +324,10 @@
 
 						//放大后重置图片位置
 						this.resetImgPosition($zoomTarget);
-						
+
 						//如果有自动播放，自动播放
 						if(!this.isFullScreen) this.autoSlide();
-						
+
 						$zoomTarget = null;
 
 						break;
@@ -339,7 +357,7 @@
 				}else if(l > 0 && Math.abs(l) > this.liWidth/3 && canMovePre){
 					console.log('moveToRight');
 					this.moveprev();
-				}else{	
+				}else{
 					this.transform(3, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
 				}
 
@@ -364,7 +382,7 @@
 
 				var imgWidth = $img.width(),
 					imgHeight = $img.height();
-				
+
 
 				//上下边界的界定
 				var set = (this.winHeight - imgHeight)/2;
@@ -403,7 +421,7 @@
 			},
 			slide: function(){
 				var that = this;
-				
+
 				this.movenext();
 
 				this.timer = setTimeout(function(){
@@ -421,7 +439,7 @@
 				if(this.indexNow < 0 && this.setting.isLoop){
 
 					this.indexNow = this.liLength - 1;
-				  	
+
 					setTimeout(function(){
 						that.transform(0, -(that.indexNow) * that.liWidth, 0, 1, 'auto', that.$ul);
 	 				},200);
@@ -432,7 +450,7 @@
 					this.$navli.removeClass('on');
 					this.$navli.eq(this.indexNow).addClass('on');
 				}
-				
+
 			},
 			movenext: function(){
 				var that = this;
@@ -443,20 +461,20 @@
 				this.transform(3, -(this.indexNow) * this.liWidth, 0, 1,  'auto', this.$ul);
 
 				if(this.indexNow >= this.liLength && this.setting.isLoop){
-				 	
+
 					this.indexNow = 0;
-				  
+
 					setTimeout(function(){
 						that.transform( 0, 0, 0, 1, 'auto',that.$ul);
 					},200);
-				}	
+				}
 
 				//点点
 				if(this.setting.hasDot){
 					this.$navli.removeClass('on');
 					this.$navli.eq(this.indexNow).addClass('on');
 				}
-		
+
 			},
 			transform : function(duration, positionX, positionY, scale, origin, $target){
 				$target.css({
@@ -480,6 +498,22 @@
 
 				return Math.sqrt(disX * disX + disY * disY);
 			},
+			uodateOrientation: function(){
+				console.log('旋转');
+
+				var that = this;
+				if(this.supportOrientation){
+					that.setW_H(true);
+				}else{
+					clearTimeout(this.resizetTimer);
+					this.resizetTimer = setTimeout(function(){
+						var iwNow =  window.innerWidth;
+							if(iwNow != that.winWidth ){
+								that.setW_H(true);
+							}
+					}, 300);
+				}
+			},
 			destory:function(e){
 				if(this.$close){
 					this.$close.off('touchstar');
@@ -493,7 +527,6 @@
 					this.$el.off('touchstar touchmove touchend').remove();
 					this.$el = null;
 				}
-				
 			}
 		}
 

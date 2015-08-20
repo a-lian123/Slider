@@ -11,7 +11,7 @@
 		.wrapper {width: 90%;position: relative;height: 200px;margin: 0 auto;}
 		.imgAry{width:100%;height: 100%;}
 		.imgAry li{height:100%;position: relative;}
-		.imgAry img{width: 100%;display: block;}
+		.imgAry img{width: 100%;height:100%;display: block;}
 	</style>
 </head>
 <body>
@@ -31,19 +31,6 @@
 <script src="../js/Slider.js"></script>
 <script>
 $(function(){
-	
-	//图片cover代码，与插件无关
-	$('img').each(function(){
-		var imgW = $(this).width(),
-			imgH = $(this).height(),
-			liH = $('li').height(),
-			liW = $('li').width();
-		if(liH > imgH){
-			var scale = liH/imgH;
-			$(this).css({'width' : scale * imgW, 'height' : liH});
-		}
-	});
-
 	$.slider({
 		isLoop: true,  //是都循环播放
 		hasDot: true, //是否有点点
