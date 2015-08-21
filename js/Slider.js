@@ -37,18 +37,22 @@
 			initFingerDis : 0,                               //两个手指之间的距离
 			isScale       : false,                           //是否正在缩放
 			isSliding     : false,                           //是否正在滑动
-			initImgMoveX  : 0,                               //图片放大的时候初始触摸的X
-			initImgMoveY  : 0,	                             //图片放大的时候初始触摸的Y
-			lastImgMoveX  : 0,                               //图片放大的时候移动的X
-			lastImgMoveY  : 0,	                             //图片放大的时候移动的Y
-			lastSlideX    : 0,                               //滑动的时候X的坐标
-			initSlideX    : 0,                               //滑动触摸时手指的x坐标
+			initImgX      : 0,                               //图片放大的时候初始触摸的X
+			initImgY      : 0,	                             //图片放大的时候初始触摸的Y
+			lastImgX      : 0,                               //图片放大的时候移动的X
+			lastImgY      : 0,	                             //图片放大的时候移动的Y
+			imgMoveX      : 0,                               //图片最终的移动X
+			imgMoveY      : 0,                               //图片最终的移动Y
+			initSlideX    : 0,                               //滑动开始时手指的X坐标
+			initSlideY    : 0,                               //滑动开始时手指的Y的坐标
+			lastSlideY    : 0,                               //滑动进行时手指的Y坐标
+			lastSlideX    : 0,                               //滑动进行时手指的X的坐标
+			moveLengthX   : 0,                               //滑动的X距离
+			moveLengthY   : 0,                               //滑动的Y距离
 			minScale      : 1.3,                             //图片最小缩放倍数
 			maxScale      : 3,                               //图片最大缩放倍数
 			scaleArg      : 1,                               //图片缩放率
 			finalScale    : 1,                               //最终的缩放率
-			moveX         : 0,                               //最终的移动X
-			moveY         : 0,                               //最终的移动Y
 			scale         : 1,                               //缩放的比例
 			supportOrientation: false,                       //是否支持旋转事件
 			resizetTimer  : null,                            //屏幕大小变化时使用的计时器
@@ -259,7 +263,7 @@
 					$zoomTarget = this.setting.isLoop ? this.$li.eq(this.indexNow + 1) : this.$li.eq(this.indexNow),
 					scale = 0;
 
-				if (e.preventDefault) e.preventDefault();
+				if (e.preventDefault && this.setting.isFullScreen) e.preventDefault();
 
 				//关闭
 				if($(e.target).attr('id') === 'J-slide-colse'){this.destory(); return;}
@@ -276,11 +280,13 @@
 							this.initFingerDis = this.fingersDistance(touches);
 							this.isScale = true;
 						//缩放之后的移动
-						}else if(touches.length === 1 && this.isScale && !this.isSliding){							this.initImgMoveX = touches[0].clientX - this.moveX;
-							this.initImgMoveY = touches[0].clientY - this.moveY;
+						}else if(touches.length === 1 && this.isScale && !this.isSliding){
+							this.initImgX = touches[0].clientX - this.imgMoveX;
+							this.initImgY = touches[0].clientY - this.imgMoveY;
 						//滑动的移动
 						}else if(touches.length === 1 && !this.isScale){
 							this.initSlideX = this.lastSlideX = touches[0].clientX;
+							this.initSlideY = this.lastSlideY = touches[0].clientY;
 							this.moveLength = 0;
 						}
 
@@ -298,25 +304,35 @@
 								this.scale = rate * this.finalScale;
 								this.transform(0, 0, 0, this.scale ,'50% 50%', $zoomTarget);
 						//放大的时候移动图片
-						}else if(touches.length === 1 &&  this.isScale && !this.isSliding){							this.lastImgMoveX = touches[0].clientX;
-								this.lastImgMoveY = touches[0].clientY;
-								this.moveX = this.lastImgMoveX - this.initImgMoveX;
-								this.moveY = this.lastImgMoveY - this.initImgMoveY;
+						}else if(touches.length === 1 &&  this.isScale && !this.isSliding){
+								this.lastImgX = touches[0].clientX;
+								this.lastImgY = touches[0].clientY;
+								this.imgMoveX = this.lastImgX - this.initImgX;
+								this.imgMoveY = this.lastImgY - this.initImgY;
 
 								//移动图片
-								this.transform(0 ,this.moveX, this.moveY, this.finalScale, '50% 50%', $zoomTarget);
+								this.transform(0 ,this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
 						//滑动
 						}else if(touches.length === 1){
 							//滑动时禁止其他的操作（放大，移动）
 							this.isSliding = true;
 							this.lastSlideX = touches[0].clientX;
-							this.moveLength = this.lastSlideX - this.initSlideX;
-							this.transform(0, (-that.indexNow * that.liWidth + that.moveLength), 0, 1, 'auto', this.$ul);
+							this.lastSlideY = touches[0].clientY;
+							this.moveLengthX = this.lastSlideX - this.initSlideX;
+							this.moveLengthY = this.lastSlideY - this.initSlideY;
+
+							if(Math.abs(this.moveLengthX) < Math.abs(this.moveLengthY)){
+								return;
+							}else{
+								e.preventDefault();
+								this.transform(0, (-that.indexNow * that.liWidth + that.moveLengthX), 0, 1, 'auto', this.$ul);
+							}
 						}
 
 						break;
 					case 'touchend':
 						console.log('touchend');
+
 						this.$el.off('touchmove touchend');
 
 						//滑动后重置silder位置
@@ -335,8 +351,8 @@
 						if(this.isScale){
 							//重置finalScale,和moveX，moveY
 							this.finalScale = 1;
-							this.moveY = 0;
-							this.moveX = 0;
+							this.imgMoveY = 0;
+							this.imgMoveX = 0;
 							this.transform(3 , 0, 0, 1, '50% 50%', $zoomTarget);
 							this.isScale = false;
 						}
@@ -347,7 +363,7 @@
 			resetSliderPosition: function(){
 				if(!this.isSliding) return;
 
-				var l = this.moveLength;
+				var l = this.moveLengthX;
 				var canMovePre =  this.indexNow != 0 || this.setting.isLoop,
 					canMoveNext = this.indexNow != this.liLength - 1 || this.setting.isLoop;
 
@@ -372,8 +388,8 @@
 				if(this.scale <= this.minScale){
 					//重置finalScale,和moveX，moveY
 					this.finalScale = 1;
-					this.moveY = 0;
-					this.moveX = 0;
+					this.imgMoveY = 0;
+					this.imgMoveX = 0;
 					this.transform(3 , 0, 0, 1, '50% 50%', $zoomTarget);
 					this.isScale = false;
 				}else{
@@ -387,36 +403,36 @@
 				//上下边界的界定
 				var set = (this.winHeight - imgHeight)/2;
 				if(set > 0){
-					if(this.moveY < -set){
-						this.moveY = -set;
-					}else if(this.moveY > set){
-						this.moveY = set;
+					if(this.imgMoveY < -set){
+						this.imgMoveY = -set;
+					}else if(this.imgMoveY > set){
+						this.imgMoveY = set;
 					}
 				}else{
-					if(this.moveY < set){
-						this.moveY = set;
-					}else if(this.moveY >　-set){
-						this.moveY = -set;
+					if(this.imgMoveY < set){
+						this.imgMoveY = set;
+					}else if(this.imgMoveY >　-set){
+						this.imgMoveY = -set;
 					}
 				}
 
 				set = (this.winWidth - imgWidth)/2;
 				if(set > 0){
-					if(this.moveX < -set){
-						this.moveX = -set;
-					}else if(this.moveX > set){
-						this.moveX = set;
+					if(this.imgMoveX < -set){
+						this.imgMoveX = -set;
+					}else if(this.imgMoveX > set){
+						this.imgMoveX = set;
 					}
 				}else{
-					if(this.moveX < set){
-						this.moveX = set;
-					}else if(this.moveX > -set){
-						this.moveX = -set;
+					if(this.imgMoveX < set){
+						this.imgMoveX = set;
+					}else if(this.imgMoveX > -set){
+						this.imgMoveX = -set;
 					}
 				}
 
 				//移动图片
-				this.transform(3 ,this.moveX, this.moveY, this.finalScale, '50% 50%', $zoomTarget);
+				this.transform(3 ,this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
 
 			},
 			slide: function(){
