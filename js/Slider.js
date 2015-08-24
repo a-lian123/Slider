@@ -49,6 +49,7 @@
 			lastSlideX    : 0,                               //滑动进行时手指的X的坐标
 			moveLengthX   : 0,                               //滑动的X距离
 			moveLengthY   : 0,                               //滑动的Y距离
+			canMove       : 0,                               //判断是否能移动
 			minScale      : 1.3,                             //图片最小缩放倍数
 			maxScale      : 3,                               //图片最大缩放倍数
 			scaleArg      : 1,                               //图片缩放率
@@ -276,9 +277,8 @@
 						if(!this.isFullScreen) clearInterval(this.timer);
 
 						//缩放
-						if(touches.length === 2){
+						if(touches.length === 2 && this.setting.isFullScreen){
 							this.initFingerDis = this.fingersDistance(touches);
-							this.isScale = true;
 						//缩放之后的移动
 						}else if(touches.length === 1 && this.isScale && !this.isSliding){
 							this.initImgX = touches[0].clientX - this.imgMoveX;
@@ -298,7 +298,8 @@
 						console.log('touchmove');
 
 						//两只手指放大
-						if(touches.length === 2 && !this.isSliding){
+						if(touches.length === 2 && !this.isSliding  && this.setting.isFullScreen){
+								this.isScale = true;
 								this.lastFingerDis = this.fingersDistance(touches);
 								var rate = this.lastFingerDis / this.initFingerDis;
 								this.scale = rate * this.finalScale;
@@ -314,16 +315,17 @@
 								this.transform(0 ,this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
 						//滑动
 						}else if(touches.length === 1){
-							//滑动时禁止其他的操作（放大，移动）
-							this.isSliding = true;
 							this.lastSlideX = touches[0].clientX;
 							this.lastSlideY = touches[0].clientY;
 							this.moveLengthX = this.lastSlideX - this.initSlideX;
 							this.moveLengthY = this.lastSlideY - this.initSlideY;
+							console.log(this.canMove);
 
-							if(Math.abs(this.moveLengthX) < Math.abs(this.moveLengthY)){
-								return;
-							}else{
+							if(this.canMove == undefined){
+								this.canMove = (Math.abs(this.moveLengthX) >= Math.abs(this.moveLengthY));
+							}
+							if(this.canMove || this.setting.isFullScreen){
+								this.isSliding = true;
 								e.preventDefault();
 								this.transform(0, (-that.indexNow * that.liWidth + that.moveLengthX), 0, 1, 'auto', this.$ul);
 							}
@@ -345,6 +347,8 @@
 						if(!this.isFullScreen) this.autoSlide();
 
 						$zoomTarget = null;
+						this.isSliding = false;
+						this.canMove = undefined;
 
 						break;
 					case 'doubleTap':
@@ -376,8 +380,6 @@
 				}else{
 					this.transform(3, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
 				}
-
-				this.isSliding = false;
 			},
 			resetImgPosition: function($zoomTarget){
 				if(!this.isScale) return;
