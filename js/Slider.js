@@ -18,7 +18,8 @@
 				indexNow: 0,         //开始的位置
 				isFullScreen: true,  //是否全屏
 				$el     : null,      //最外层元素
-				autoSlide: false     //是否自动滑动
+				autoSlide: false,    //是否自动滑动
+				hasCloseBtn: false   //全屏的时候是否拥有关闭全屏的按钮，默认是点击一下关闭
 			},
 			$el        : null,
 			$close     : null,
@@ -49,7 +50,7 @@
 			lastSlideX    : 0,                               //滑动进行时手指的X的坐标
 			moveLengthX   : 0,                               //滑动的X距离
 			moveLengthY   : 0,                               //滑动的Y距离
-			canMove       : 0,                               //判断是否能移动
+			canMove       : undefined,                       //判断是否能移动
 			minScale      : 1.3,                             //图片最小缩放倍数
 			maxScale      : 3,                               //图片最大缩放倍数
 			scaleArg      : 1,                               //图片缩放率
@@ -76,6 +77,8 @@
 				this.autoSlide();
 			},
 			render: function(){
+
+				
 				//根据是否全屏进行渲染
 				if(this.setting.isFullScreen){
 					this.fullScreenRender();
@@ -132,6 +135,9 @@
 				var that = this,
 					scrollTop = $(window).scrollTop();
 
+				//插入样式
+				this.appendStyle();
+
 				//生成基本元素
 				var html = '<div class="slide-wrapper" id="J-slide-wrapper">'+
 								'<ul class="slide"></ul>'+
@@ -151,6 +157,13 @@
 
 				//插入点点
 				this.appendDot();
+
+				//显示隐藏关闭按钮
+				if(!this.setting.hasCloseBtn){
+					this.$close.hide();
+				}
+
+				
 
 			},
 			//初始化简单幻灯片
@@ -267,7 +280,9 @@
 				if (e.preventDefault && this.setting.isFullScreen) e.preventDefault();
 
 				//关闭
-				if($(e.target).attr('id') === 'J-slide-colse'){this.destory(); return;}
+				if(this.setting.hasCloseBtn){
+					if($(e.target).attr('id') === 'J-slide-colse'){this.destory(); return;}
+				}
 
 				switch(type){
 					case 'touchstart':
@@ -336,6 +351,12 @@
 						console.log('touchend');
 
 						this.$el.off('touchmove touchend');
+
+						//如果只是简单的点击，且没有关闭按钮，关闭全屏
+						if(this.setting.isFullScreen && !this.isSliding && !this.setting.hasCloseBtn && !this.isScale ){
+							this.destory(); 
+							return;
+						}
 
 						//滑动后重置silder位置
 						this.resetSliderPosition();
@@ -530,6 +551,12 @@
 								that.setW_H(true);
 							}
 					}, 300);
+				}
+			},
+			appendStyle:function(){
+				if($('#J_slide-style').length <= 0){
+					var $style = $('<style id="J_slide-style">.slide-wrapper li,.slide-wrapper ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{width:100%;display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0 0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;right:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}.slide-wrapper_n{overflow:hidden;position:relative}.slide-wrapper_n ul{position:absolute;left:0;top:0}.slide-wrapper_n .slide-nav{left:50%;top:auto}.slide-wrapper_n li{float:left;list-style:none}body{margin:0;padding:0}li,ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{width:100%;display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;left:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}</style>');
+					$('head').append($style);
 				}
 			},
 			destory:function(e){

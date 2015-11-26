@@ -48,7 +48,7 @@ module.exports = function(grunt) {
 		open: {
 			dev: {
 				url: 'http://localhost:' + config.serverPort + '/' + config.html,
-				app: 'chrome', //指定打开的浏览器
+				app: 'google chrome', //指定打开的浏览器
 			}
 		},
 

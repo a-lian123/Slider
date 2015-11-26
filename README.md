@@ -3,18 +3,18 @@
 
 ###简介
 
- Slider1.0.1是一个我闲暇时间写的Zepto插件，用于在移动端实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放，也可实现简单的页面上幻灯片效果。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
+ Slider2.0.1是一个我闲暇时间写的Zepto插件，用于在移动端实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放，也可实现简单的页面上幻灯片效果。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
 
  ----------------------------------------------
 ###例子
 
 #####微信图片展示的效果
 ![例子](http://test.wzlian.me/slider/images/1.png)
-点击链接[enter link description here](http://test.wzlian.me/slider/demo/demo2.html)
+点击链接[enter link description here](http://test.wzlian.me/slider/demo/demo1.html)
 
 #####简单的幻灯片效果
 ![例子](http://test.wzlian.me/slider/images/2.png)
-点击链接[enter link description here](http://test.wzlian.me/slider/demo/demo1.html)
+点击链接[enter link description here](http://test.wzlian.me/slider/demo/demo2.html)
 
 -------------------------------------------
 ###调用方法
@@ -30,7 +30,7 @@ $.slider({
 	isFullScreen: true                                       //是否全屏展示
 });
 ```
-说明：只需传入需要展示的图片地址数组，不许要增加额外的HTML以及CSS。
+说明：只需传入需要展示的图片地址数组，不需要增加额外的HTML以及CSS，不需要引入CSS链接，js会自动插入样式，引入的css文件在`css/slider_fullScreen.css`。
 
 (2)实现简单的幻灯片效果
 
@@ -56,13 +56,11 @@ $.slider({
 </div>
 
 ```
-js会为最外层添加```slide-wrapper_n```类并添加必要的样式。li中的样式可以自由设置，添加的样式如下。
+js会为最外层添加```slide-wrapper_n```类并添加必要的样式。
+这部分我们需要先在样式中引入以下样式，li中的样式可以自由设置覆盖，添加的样式如下，css文件在`css/slider_noFullScreen.css`。
 
 ```
-ul,li{padding: 0;margin: 0;}
-.slide-wrapper_n{overflow: hidden;}
-.slide-wrapper_n ul{position: absolute;left: 0;top: 0;}
-.slide-wrapper_n li{float: left;list-style: none;}
+.slide-wrapper_n{overflow: hidden;}.slide-wrapper_n li,.slide-wrapper_n ul{margin:0;padding:0}.slide-wrapper_n ul{position: absolute;left: 0;top: 0;}.slide-wrapper_n li{float: left;list-style: none;}
 ```
 
 -------------------------------------------
@@ -77,3 +75,4 @@ width 'zepto event touch ie' mode
   1.0.1  修复了页面如果滚动到底部，滑动组件直接定位在顶部的bug；修改了图片加载方式，由之前
   的全部加载改为图片独立加载。
   2.0.0  增加了简单幻灯片的效果，优化了代码
+  2.0.1  全屏幻灯片默认隐藏关闭按钮，样式自动插入
