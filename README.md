@@ -26,8 +26,10 @@ $.slider({
 	imgAry: ['pic1.jpg', 'pic2.jpg', 'pic3.jpg', 'pic4.jpg'],//图片数组
 	isLoop:	false,                                           //是否能循环滑动，默认为false
 	hasDot: true,                                            //是否有下面的点点，默认为true
-	indexNow: 0                                              //当前的图片顺序,默认为0，从0开始
-	isFullScreen: true                                       //是否全屏展示
+	indexNow: 0,                                             //当前的图片顺序,默认为0，从0开始
+	isFullScreen: true,                                      //是否全屏展示
+	hasCloseBtn: true                                        //是否拥有关闭按钮，默认没有
+
 });
 ```
 说明：只需传入需要展示的图片地址数组，不需要增加额外的HTML以及CSS，不需要引入CSS链接，js会自动插入样式，引入的css文件在`css/slider_fullScreen.css`。
