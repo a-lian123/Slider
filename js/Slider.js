@@ -36,7 +36,8 @@
 			winHeight  : 0,                                  //屏幕高度
 			loadNum    : 0,                                  //加载的图片数量
 			initFingerDis : 0,                               //两个手指之间的距离
-			isScale       : false,                           //是否正在缩放
+			isScale       : false,                           //是否处于缩放
+			isScaling     : false,                           //是否正在缩放
 			isSliding     : false,                           //是否正在滑动
 			initImgX      : 0,                               //图片放大的时候初始触摸的X
 			initImgY      : 0,	                             //图片放大的时候初始触摸的Y
@@ -51,19 +52,22 @@
 			moveLengthX   : 0,                               //滑动的X距离
 			moveLengthY   : 0,                               //滑动的Y距离
 			canMove       : undefined,                       //判断是否能移动
-			minScale      : 1.3,                             //图片最小缩放倍数
+			minScale      : 1,                               //图片最小缩放倍数
 			maxScale      : 3,                               //图片最大缩放倍数
 			scaleArg      : 1,                               //图片缩放率
 			finalScale    : 1,                               //最终的缩放率
 			scale         : 1,                               //缩放的比例
 			supportOrientation: false,                       //是否支持旋转事件
 			resizetTimer  : null,                            //屏幕大小变化时使用的计时器
+			destoryTimer  : null,                            //tap点击关闭组件计时器
+			lastTouchTime : 0,                               //记录上一次点击时间
+			isDoubleTap   : false,                           //是否双击
 			init: function (data, callback){
 				var that = this;
 				this.$el = this.setting.$el || null;
 				this.supportOrientation  = (typeof window.orientation == "number" && typeof window.onorientationchage == "object");
 
-				if(this.setting.indexNow > 0) this.indexNow = this.setting.indexNow -1;
+				if(this.setting.indexNow > 0) this.indexNow = this.setting.indexNow;
 
 				this.liLength = this.setting.imgAry.length || this.$el.find('li').length;
 
@@ -89,7 +93,7 @@
 			onEvent: function(){
 				var that = this;
 				//滑动
-				this.$el.on('touchstart doubleTap',function(e){
+				this.$el.on('touchstart ',function(e){
 					that.onTouchEvent.call(that,e);
 				});
 				//屏幕旋转
@@ -254,7 +258,7 @@
 				if(!(imgWidth && imgHeight)){
 					$target.html('<span class="slide-tips">加载失败</span>');
 				}else{
-					if(imgHeight > imgWidth){
+					if(imgHeight > imgWidth && imgHeight > this.winWidth){
 						var scaleH = this.winHeight/imgHeight;
 						var scaleW = this.winWidth/imgWidth;
 
@@ -264,6 +268,8 @@
 							$target.css({'width': this.winWidth , 'height': imgHeight * scaleW});
 						}
 
+					}else if(imgWidth >imgHeight  && imgWidth > this.winWidth){
+						$target.css({'width': this.winWidth });
 					}
 					$target.prev().remove();
 					$target.show();
@@ -276,17 +282,16 @@
 					touches = e.touches || [],
 					$zoomTarget = this.setting.isLoop ? this.$li.eq(this.indexNow + 1) : this.$li.eq(this.indexNow),
 					scale = 0;
-
 				if (e.preventDefault && this.setting.isFullScreen) e.preventDefault();
 
 				//关闭
 				if(this.setting.hasCloseBtn){
 					if($(e.target).attr('id') === 'J-slide-colse'){this.destory(); return;}
 				}
-
 				switch(type){
 					case 'touchstart':
-						console.log('touchstart');
+						//判断是否双击
+						this.doubleTapOrNot(touches.length);
 
 						//停止自动播放
 						if(!this.isFullScreen) clearInterval(this.timer);
@@ -310,17 +315,19 @@
 						});
 						break;
 					case 'touchmove':
-						console.log('touchmove');
+						//console.log('touchmove');
 
 						//两只手指放大
 						if(touches.length === 2 && !this.isSliding  && this.setting.isFullScreen){
 								this.isScale = true;
+								this.isScaling = true;
 								this.lastFingerDis = this.fingersDistance(touches);
 								var rate = this.lastFingerDis / this.initFingerDis;
 								this.scale = rate * this.finalScale;
 								this.transform(0, 0, 0, this.scale ,'50% 50%', $zoomTarget);
 						//放大的时候移动图片
-						}else if(touches.length === 1 &&  this.isScale && !this.isSliding){
+						}else if(touches.length === 1 && this.isScale && !this.isSliding){
+								this.isScaling = true;
 								this.lastImgX = touches[0].clientX;
 								this.lastImgY = touches[0].clientY;
 								this.imgMoveX = this.lastImgX - this.initImgX;
@@ -348,15 +355,15 @@
 
 						break;
 					case 'touchend':
-						console.log('touchend');
+						//console.log('touchend');
 
 						this.$el.off('touchmove touchend');
+						
+						//单击关闭
+						this.tapClose();
 
-						//如果只是简单的点击，且没有关闭按钮，关闭全屏
-						if(this.setting.isFullScreen && !this.isSliding && !this.setting.hasCloseBtn && !this.isScale ){
-							this.destory(); 
-							return;
-						}
+						//是否是双击
+						this.doubleTap($zoomTarget);
 
 						//滑动后重置silder位置
 						this.resetSliderPosition();
@@ -372,19 +379,54 @@
 						this.canMove = undefined;
 
 						break;
-					case 'doubleTap':
-						if(this.isScale){
-							//重置finalScale,和moveX，moveY
-							this.finalScale = 1;
-							this.imgMoveY = 0;
-							this.imgMoveX = 0;
-							this.transform(3 , 0, 0, 1, '50% 50%', $zoomTarget);
-							this.isScale = false;
-						}
-						$zoomTarget = null;
-						break;
+						
 				}
 			},
+			tapClose: function(){
+				var that = this;
+				//如果只是简单的点击，且没有关闭按钮，关闭全屏
+				if(this.setting.isFullScreen  && !this.setting.hasCloseBtn &&  !this.isScaling && !this.isSliding){
+					clearTimeout(this.destoryTimer);
+					this.destoryTimer = setTimeout(function(){
+							that.destory(); 
+							return;
+					},250);
+				}
+				this.isScaling = false;
+			},
+			doubleTapOrNot:function(touchesLength){
+				var now =  Date.now();
+				var touchDelay = now - (this.lastTouchTime||now);
+				this.lastTouchTime = now;
+				if(touchDelay > 0 && touchDelay < 250 && touchesLength < 2){
+					this.isDoubleTap = true;
+				}
+			},
+			doubleTap: function($zoomTarget){
+				if(this.isDoubleTap){
+					clearTimeout(this.destoryTimer);
+					// console.log(this.destoryTimer);
+					if(this.isScale){
+						//重置finalScale,和moveX，moveY
+						this.finalScale = 1;
+						this.imgMoveY = 0;
+						this.imgMoveX = 0;
+						this.isScale = false;
+					}
+					else{
+						//重置finalScale,和moveX，moveY
+						this.scale = this.finalScale = 1.6;
+						this.imgMoveY = 0;
+						this.imgMoveX = 0;
+						this.isScale = true;
+					}
+					this.transform(3 , this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
+
+					$zoomTarget = null;
+					
+					this.isDoubleTap = false;
+				}
+			},	
 			resetSliderPosition: function(){
 				if(!this.isSliding) return;
 
@@ -392,10 +434,10 @@
 				var canMovePre =  this.indexNow != 0 || this.setting.isLoop,
 					canMoveNext = this.indexNow != this.liLength - 1 || this.setting.isLoop;
 
-				if(l < 0 && Math.abs(l) > this.liWidth/3 && canMoveNext){
+				if(l < 0 && Math.abs(l) > 80 && canMoveNext){
 					console.log('moveToLeft');
 					this.movenext();
-				}else if(l > 0 && Math.abs(l) > this.liWidth/3 && canMovePre){
+				}else if(l > 0 && Math.abs(l) > 80 && canMovePre){
 					console.log('moveToRight');
 					this.moveprev();
 				}else{
@@ -404,7 +446,8 @@
 			},
 			resetImgPosition: function($zoomTarget){
 				if(!this.isScale) return;
-
+				
+				
 				var $img = $zoomTarget.find('img');
 
 				//缩放倍数和状态重置
@@ -538,24 +581,22 @@
 				return Math.sqrt(disX * disX + disY * disY);
 			},
 			uodateOrientation: function(){
-				console.log('旋转');
 
 				var that = this;
+
 				if(this.supportOrientation){
 					that.setW_H(true);
 				}else{
+
 					clearTimeout(this.resizetTimer);
 					this.resizetTimer = setTimeout(function(){
-						var iwNow =  window.innerWidth;
-							if(iwNow != that.winWidth ){
-								that.setW_H(true);
-							}
+						that.setW_H(true);
 					}, 300);
 				}
 			},
 			appendStyle:function(){
 				if($('#J_slide-style').length <= 0){
-					var $style = $('<style id="J_slide-style">.slide-wrapper li,.slide-wrapper ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{width:100%;display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0 0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;right:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}.slide-wrapper_n{overflow:hidden;position:relative}.slide-wrapper_n ul{position:absolute;left:0;top:0}.slide-wrapper_n .slide-nav{left:50%;top:auto}.slide-wrapper_n li{float:left;list-style:none}body{margin:0;padding:0}li,ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{width:100%;display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;left:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}</style>');
+					var $style = $('<style id="J_slide-style">.slide-wrapper li,.slide-wrapper ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0 0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;right:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}.slide-wrapper_n{overflow:hidden;position:relative}.slide-wrapper_n ul{position:absolute;left:0;top:0}.slide-wrapper_n .slide-nav{left:50%;top:auto}.slide-wrapper_n li{float:left;list-style:none}body{margin:0;padding:0}li,ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;left:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}</style>');
 					$('head').append($style);
 				}
 			},

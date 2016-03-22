@@ -9,7 +9,7 @@ module.exports = function(grunt) {
 		serverPort: 3000,
 		livereload: 35729,
 		root: './',        // web服务器根目录，.号为Gruntfile.js所在目录
-		html: 'dev/html/', //html模板所在目录
+		html: 'demo/', //html模板所在目录
 	};
 
 	// 时间戳

@@ -24,9 +24,10 @@
 		<li><img src="../images/images.jpg" alt="6"></li>
 	</ul>
 </div>
+<script src="http://jsconsole.com/js/remote.js?F984F879-D8DA-4BDD-B471-770A475E4018"></script>
 
 <script src="../js/zepto.min.js"></script>
-<script src="../js/Slider.min.js"></script>
+<script src="../js/Slider.js"></script>
 <script>
 $(function(){
 	//图片cover代码，与插件无关
@@ -43,7 +44,7 @@ $(function(){
 
 	$('#J-imgAry').on('touchstart',function(e){
 		var $target = $(e.target).parent(),
-			index   = $target.index() + 1;
+			index   = $target.index() ;
 		if($target[0].tagName.toLowerCase() !== "li") return;
 
 		//插件主要代码
