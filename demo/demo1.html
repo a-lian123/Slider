@@ -6,7 +6,7 @@
 	<title>Slide Demo</title>
 	<style>
 		body{height: 1000px;padding: 0;margin: 0;}
-		h1{font-family: "Hiragino Sans GB", "Hiragino Sans GB W3", "Microsoft YaHei", "Î¢ï¿½ï¿½ï¿½Åºï¿½", tahoma, arial, simsun, "ï¿½ï¿½ï¿½ï¿½";width: 70%;margin: 0 auto;text-align: center;margin-top: 20px;line-height: 58px;font-size: 23px; border-bottom: 1px solid #ddd;color: #808080;}
+		h1{font-family: "Helvetica Neue", Helvetica, Arial, 'Micorsoft Yahei', sans-serif;width: 70%;margin: 0 auto;text-align: center;margin-top: 20px;line-height: 58px;font-size: 23px; border-bottom: 1px solid #ddd;color: #808080;}
 		.imgAry {margin: 0;padding: 0;}
 		.imgAry li{float:left;width: 30%;padding-top: 30%;margin:1.66%;position: relative;overflow: hidden;}
 		.imgAry img{position: absolute;width: 100%;left: 0;top: 0;}
@@ -24,10 +24,10 @@
 		<li><img src="../images/images.jpg" alt="6"></li>
 	</ul>
 </div>
-<script src="http://jsconsole.com/js/remote.js?F984F879-D8DA-4BDD-B471-770A475E4018"></script>
 
 <script src="../js/zepto.min.js"></script>
 <script src="../js/Slider.js"></script>
+<!-- <script src="http://jsconsole.com/js/remote.js?F984F879-D8DA-4BDD-B471-770A475E4018"></script> -->
 <script>
 $(function(){
 	//图片cover代码，与插件无关
@@ -42,23 +42,30 @@ $(function(){
 		}
 	});
 
+	//插件主要代码
+	var Sldier = $.slider({
+		imgAry: ['../images/1408219308583895419.jpg', 
+				'../images/1817202449744335681.jpg',
+				'../images/6204762820111109095629050_640.jpg',
+				'../images/6597343545054048507.jpg',
+				'../images/Funny_Kitty_Balanc_e.jpg',
+				'../images/images.jpg'
+				],
+		hasDot  : true,      //是否有点点，默认为 true
+		isLoop  : false,     //是否有循环，默认为 false
+		indexNow: 0,         //开始的位置，可以在开始时设置，也可以在show函数调用时设置
+		isFullScreen: true,  //是否全屏, 默认全屏
+		$el     : null,      //最外层元素，全屏模式下不需要指定
+		autoSlide: false,    //是否自动滑动,自动滑动的情况下, isLoop会设置为true，全屏没有自动滑动
+		hasCloseBtn: false   //全屏的时候是否拥有关闭全屏的按钮，默认是没有，点击一下关闭
+	});
+
 	$('#J-imgAry').on('touchstart',function(e){
 		var $target = $(e.target).parent(),
 			index   = $target.index() ;
 		if($target[0].tagName.toLowerCase() !== "li") return;
-
-		//插件主要代码
-		$.slider({
-			imgAry: ['../images/1408219308583895419.jpg', 
-					'../images/1817202449744335681.jpg',
-					'../images/6204762820111109095629050_640.jpg',
-					'../images/6597343545054048507.jpg',
-					'../images/Funny_Kitty_Balanc_e.jpg',
-					'../images/images.jpg'
-					],
-			isLoop: true,
-			indexNow:index
-		});
+		
+		Sldier.show(index); //调用显示
 	});
 });
 </script>

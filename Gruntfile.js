@@ -69,29 +69,27 @@ module.exports = function(grunt) {
 			},
 		},
 		//css压缩
-		// cssmin: {
-		// 	options: {
-		// 		compatibility: "ie7",
-		// 		advanced: false,
-		// 		banner: '/*! <%= pkg.name %> - v<%= pkg.version %> - ' + ' auth:<%= pkg.author %> */\n'
-		// 	},
-		// 	build: {
-		// 		files: [
-		// 			{
-		// 				expand: true,
-		// 				cwd: 'dev/css/',
-		// 				src: ['**/*.css'],
-		// 				dest: 'build/css/',
-		// 				ext: '_<%=pkg.version%>.min.css'
-		// 			}
-		// 		]
-		// 	}
-		// },
+		cssmin: {
+			options: {
+				compatibility: "ie7",
+				advanced: false
+			},
+			build: {
+				files: [
+					{
+						expand: true,
+						cwd: 'css/',
+						src: ['slider.css'],
+						dest: 'build/css/',
+						ext: '.min.css'
+					}
+				]
+			}
+		},
 		//js压缩
 		uglify: {
 			build: {
 				options: {
-					banner: '/*! <%= pkg.name %> - v<%= pkg.version %> - ' + ' auth:<%= pkg.author %>*/\n',
 					compress: {
 			          drop_console: true
 			        }
@@ -101,7 +99,7 @@ module.exports = function(grunt) {
 						expand: true,
 						cwd: 'js/',
 						src: ['Slider.js'],
-						dest: 'js/',
+						dest: 'build/js/',
 						ext: '.min.js'
 					}
 				]
@@ -249,7 +247,7 @@ module.exports = function(grunt) {
 				options: {
 					livereload: config.livereload
 				},
-				files:['dev/**']
+				files:['**']
 			},
 			less2css: {
 				files: ['dev/less/*','!dev/less/icon.less'],
@@ -302,12 +300,8 @@ module.exports = function(grunt) {
 
 
 	// 注册grunt默认任务
-	grunt.registerTask('default', ['connect:server', 'buildSource', 'open:dev', 'watch']);
-	//开始生成文件
-	grunt.registerTask('buildSource', ['sprite','less','includereplace:dev']);
-	//转码
-	grunt.registerTask('u2g', ['transcode:u2g']);
-	grunt.registerTask('g2u', ['transcode:g2u']);
+	grunt.registerTask('default', ['connect:server', 'open:dev', 'watch']);
+	
 	//build
 	grunt.registerTask('build', [
 		'clean:build',
@@ -316,18 +310,6 @@ module.exports = function(grunt) {
 	    'uglify:build',
 	    'copy:build'
 	]);
-	grunt.registerTask('build2', [
-		'clean:build',
-		'useminPrepare',
-		
-		'filerev',
-		'usemin',
-		'u2g'
-	]);
 
-
-
-	// 监控watch事件，改变任务的配置
-	grunt.event.on('watch', function(action, filepath, file) {});
 
 };

@@ -1,9 +1,9 @@
 /**
 * aouthor: alian wangzhuanglian 654849917@qq.com
-* des    : Slider2.0.0 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform.
-*          Slider2.0.0 是一个我闲暇时间写的zepto插件，用于实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
-* version: 2.0.0
-* depend : Zepto 1.1.3 + width 'zepto event touch ie'mode
+* des    : Slider3.0.0 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform.
+*          Slider3.0.0 是一个我闲暇时间写的zepto插件，用于实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
+* version: 3.0.0
+* depend : Zepto 1.1.6 + width 'zepto event touch ie'mode
 */
 
 
@@ -18,7 +18,7 @@
 				indexNow: 0,         //开始的位置
 				isFullScreen: true,  //是否全屏
 				$el     : null,      //最外层元素
-				autoSlide: false,    //是否自动滑动
+				autoSlide: false,    //是否自动滑动,自动滑动的情况下, isLoop会设置为true
 				hasCloseBtn: false   //全屏的时候是否拥有关闭全屏的按钮，默认是点击一下关闭
 			},
 			$el        : null,
@@ -68,8 +68,11 @@
 				this.supportOrientation  = (typeof window.orientation == "number" && typeof window.onorientationchage == "object");
 
 				if(this.setting.indexNow > 0) this.indexNow = this.setting.indexNow;
-
 				this.liLength = this.setting.imgAry.length || this.$el.find('li').length;
+				
+				if(this.liLength < 2) this.setting.isLoop = false;
+				
+				if(this.setting.autoSlide && !this.setting.isFullScreen && this.liLength > 1) this.setting.isLoop = true;//如果是自动播放，自动设置为循环播放
 
 				//渲染
 				this.render();
@@ -81,8 +84,6 @@
 				this.autoSlide();
 			},
 			render: function(){
-
-				
 				//根据是否全屏进行渲染
 				if(this.setting.isFullScreen){
 					this.fullScreenRender();
@@ -93,49 +94,27 @@
 			onEvent: function(){
 				var that = this;
 				//滑动
-				this.$el.on('touchstart ',function(e){
+				this.$el.on('touchstart',function(e){
 					that.onTouchEvent.call(that,e);
 				});
 				//屏幕旋转
 				if(this.supportOrientation){
 					$(window).on('orientationchange', function(e){
-						that.uodateOrientation, call(that, e);
+						that.updateOrientation.call(that, e);
 					}, false);
 				}else{
 					$(window).resize(function(e){
-						that.uodateOrientation.call(that, e);
+						that.updateOrientation.call(that, e);
 					}, false);
 				}
 			},
-			setW_H: function(resize){
-				var that = this;
-				this.winWidth = $(window).width();
-				this.winHeight =  $(window).height();
-
-				this.liWidth = this.setting.isFullScreen ? this.winWidth : this.$el.width();
-				this.ulWidth = this.setting.isLoop ? this.liWidth * (this.liLength + 2) : this.liWidth * this.liLength;
-
-				this.$ul           = this.$el.find('ul').not('.slide-nav');
-				this.$li           = this.$ul.find('li');
-				this.$ul.css({'width' : this.ulWidth + 'px'});
-				this.$li.css({'width' : this.liWidth + 'px'});
-
-				if(this.setting.isFullScreen){
-					var scrollTop = $(window).scrollTop();
-					//最大化
-					this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop}).show();
-				}
-				if(resize && this.setting.isFullScreen){
-					var $imgs = this.$ul.find('img');
-					$imgs.each(function(i, ele){
-						that.initImg($imgs.eq(i));
-					});
-				}
-				//定位slide
-				this.locUl();
-			},
 			//初始化全屏
 			fullScreenRender: function(){
+
+				if(this.$el && this.$el.length > 0){
+					this.show();
+					return
+				};
 				var that = this,
 					scrollTop = $(window).scrollTop();
 
@@ -147,6 +126,7 @@
 								'<ul class="slide"></ul>'+
 								'<span class="slide-close" id="J-slide-colse">关闭</span>'+
 							'</div>';
+
 				this.$el           = $(html);
 				this.$close        = this.$el.find('#J-slide-colse');
 				this.$ul           = this.$el.find('ul');
@@ -157,34 +137,72 @@
 				//插入图片
 				this.appendImg();
 
-				this.setW_H();
+				this.setup();
 
-				//插入点点
-				this.appendDot();
+				
+
 
 				//显示隐藏关闭按钮
 				if(!this.setting.hasCloseBtn){
 					this.$close.hide();
 				}
 
-				
-
 			},
-			//初始化简单幻灯片
-			notfullScreenRender: function(){
-				this.setW_H();
-				this.$el.addClass('slide-wrapper_n');
+			setup: function(){
+				var that = this;
+				this.winWidth = $(window).width();
+				this.winHeight =  $(window).height();
+				this.liWidth = this.setting.isFullScreen ? this.winWidth : this.$el.width();
+				this.$ul = this.$ul || this.$el.find('ul').not('.slide-nav');
+				this.$li = this.$li || this.$ul.find('li');
+
+				if(this.liLength < 3 && this.setting.isLoop){
+					this.$ul.append(this.$li.eq(0).clone());
+					this.$ul.append(this.$li.eq(1).clone());
+					this.$li = this.$ul.find('li');
+					this.liLength = this.$li.length;
+				}
+
+				//设置li宽度
+				this.$li.width(this.liWidth);
+
+				//定位
+				this.$li.each(function(index){
+					var moveX = that.indexNow > index ? -that.liWidth : (that.indexNow < index ? that.liWidth : 0);
+					that.transform(0, {x:moveX , y:0}, $(this));
+				});
 
 				if(this.setting.isLoop){
-					this.$li.eq(0).before(this.$li.eq(this.liLength - 1).clone());
-					this.$ul.append(this.$li.eq(0).clone());
+					that.transform(0,{x: -this.liWidth, y:0 }, this.$li.eq(this.circle(this.indexNow - 1)));
+					that.transform(0,{x: this.liWidth, y: 0}, this.$li.eq(this.circle(this.indexNow + 1)));
+				}
+
+				this.appendStyle();	
+
+				if(this.setting.isFullScreen){
+					var scrollTop = $(window).scrollTop();
+					//最大化
+					this.$el.css({'width' : this.winWidth,'height' : this.winHeight,'top' : scrollTop});
+					var $imgs = this.$ul.find('img');
+					$imgs.each(function(i, ele){
+						that.initImg($imgs.eq(i));
+					});
 				}
 
 				//添加点点
 				this.appendDot();
 
-				//定位ul
-				this.locUl();
+				this.$el.css('visibility','visible');
+
+
+			},	
+			circle: function(index){
+				return (this.liLength + (index % this.liLength)) % this.liLength;
+			},
+			//初始化简单幻灯片
+			notfullScreenRender: function(){
+				this.$el.addClass('slide-wrapper_n');
+				this.setup();
 			},
 			imgOnload: function(e){
 				this.loadNum++;
@@ -196,26 +214,15 @@
 			},
 			autoSlide: function(){
 				var that = this;
-				if(this.setting.autoSlide || !this.setting.isFullScreen){
+				if(this.setting.autoSlide && !this.setting.isFullScreen){
 					this.timer = setInterval(function(){
-						if(!that.setting.isLoop && (that.indexNow == that.liLength - 1)){
-							that.indexNow = -1;
-						}
 						that.movenext();
 					},3000);
 				}
 			},
-			//定位slide
-			locUl: function(){
-				if(this.setting.isLoop){
-					this.$ul.css('left',-this.liWidth + 'px');
-				}
-				//根据index初始化位置
-				this.transform(0, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
-			},
 			appendDot: function(){
 				//生成点点
-				if(this.setting.hasDot){
+				if(this.setting.hasDot && !this.$navli){
 					this.$el.append('<ul class="slide-nav"></ul>');
 					this.$nav = this.$el.find('.slide-nav');
 
@@ -233,14 +240,11 @@
 
 				//生成图片列表
 				for(var i = 0; i < this.liLength; i++){
-					if(i == 0 && this.setting.isLoop){
-						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[this.liLength - 1] + '" /></li>';
-					}
-
 					imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
-
-					if(i == this.liLength - 1 && this.setting.isLoop){
-						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="' + this.setting.imgAry[0] + '" /></li>';
+				}
+				if(this.liLength == 2){
+					for(var i = 0; i < this.liLength; i++){
+						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
 					}
 				}
 				this.$ul.append(imgHtml);
@@ -280,13 +284,12 @@
 				var that = this,
 					type = e.type,
 					touches = e.touches || [],
-					$zoomTarget = this.setting.isLoop ? this.$li.eq(this.indexNow + 1) : this.$li.eq(this.indexNow),
-					scale = 0;
+					$zoomTarget =  this.$li.eq(this.indexNow);
 				if (e.preventDefault && this.setting.isFullScreen) e.preventDefault();
 
 				//关闭
 				if(this.setting.hasCloseBtn){
-					if($(e.target).attr('id') === 'J-slide-colse'){this.destory(); return;}
+					if($(e.target).attr('id') === 'J-slide-colse'){this.hide(); return;}
 				}
 				switch(type){
 					case 'touchstart':
@@ -324,7 +327,7 @@
 								this.lastFingerDis = this.fingersDistance(touches);
 								var rate = this.lastFingerDis / this.initFingerDis;
 								this.scale = rate * this.finalScale;
-								this.transform(0, 0, 0, this.scale ,'50% 50%', $zoomTarget);
+								this.transform(0,{scale:this.scale}, this.$li.eq(this.indexNow))
 						//放大的时候移动图片
 						}else if(touches.length === 1 && this.isScale && !this.isSliding){
 								this.isScaling = true;
@@ -334,14 +337,14 @@
 								this.imgMoveY = this.lastImgY - this.initImgY;
 
 								//移动图片
-								this.transform(0 ,this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
+								this.transform(0 ,{x: this.imgMoveX, y: this.imgMoveY, scale: this.finalScale}, $zoomTarget);
+
 						//滑动
 						}else if(touches.length === 1){
 							this.lastSlideX = touches[0].clientX;
 							this.lastSlideY = touches[0].clientY;
 							this.moveLengthX = this.lastSlideX - this.initSlideX;
 							this.moveLengthY = this.lastSlideY - this.initSlideY;
-							console.log(this.canMove);
 
 							if(this.canMove == undefined){
 								this.canMove = (Math.abs(this.moveLengthX) >= Math.abs(this.moveLengthY));
@@ -349,7 +352,23 @@
 							if(this.canMove || this.setting.isFullScreen){
 								this.isSliding = true;
 								e.preventDefault();
-								this.transform(0, (-that.indexNow * that.liWidth + that.moveLengthX), 0, 1, 'auto', this.$ul);
+								if(this.setting.isLoop){
+									this.transform(0, {x: -that.liWidth + that.moveLengthX, y: 0}, this.$li.eq(this.circle(this.indexNow - 1)));
+									this.transform(0, {x: that.moveLengthX, y: 0}, this.$li.eq(this.circle(this.indexNow)));
+									this.transform(0, {x: that.liWidth + that.moveLengthX, y: 0}, this.$li.eq(this.circle(this.indexNow + 1)));
+								}else{
+									this.moveLengthX = 
+										this.moveLengthX /
+											(
+												(!this.indexNow && this.moveLengthX > 0
+												|| this.indexNow == this.liLength - 1 && this.moveLengthX < 0
+												) ?
+												(Math.abs(this.moveLengthX) / this.liWidth + 1) : 1
+											);
+									if(this.indexNow) this.transform(0, {x: (-that.liWidth + that.moveLengthX),  y:0}, this.$li.eq(this.indexNow - 1));
+									this.transform(0, {x:(that.moveLengthX), y:0}, this.$li.eq(this.indexNow));
+									if(this.indexNow + 1 < this.liLength ) this.transform(0, {x: (that.liWidth + that.moveLengthX), y:0}, this.$li.eq(this.indexNow + 1));
+								}
 							}
 						}
 
@@ -363,20 +382,22 @@
 						this.tapClose();
 
 						//是否是双击
-						this.doubleTap($zoomTarget);
+						this.doubleTap();
 
 						//滑动后重置silder位置
 						this.resetSliderPosition();
 
 						//放大后重置图片位置
-						this.resetImgPosition($zoomTarget);
+						this.resetImgPosition();
 
 						//如果有自动播放，自动播放
 						if(!this.isFullScreen) this.autoSlide();
 
-						$zoomTarget = null;
 						this.isSliding = false;
 						this.canMove = undefined;
+						this.moveLengthX = 0;
+						this.moveLengthY = 0;
+						this.isScaling 	= false;
 
 						break;
 						
@@ -385,14 +406,15 @@
 			tapClose: function(){
 				var that = this;
 				//如果只是简单的点击，且没有关闭按钮，关闭全屏
-				if(this.setting.isFullScreen  && !this.setting.hasCloseBtn &&  !this.isScaling && !this.isSliding){
+				if(this.setting.isFullScreen  && !this.setting.hasCloseBtn && !this.isSliding && !this.isScaling){
 					clearTimeout(this.destoryTimer);
 					this.destoryTimer = setTimeout(function(){
-							that.destory(); 
+							that.finalScale = 1;
+							that.isScale = false;
+							that.hide(); 
 							return;
 					},250);
 				}
-				this.isScaling = false;
 			},
 			doubleTapOrNot:function(touchesLength){
 				var now =  Date.now();
@@ -402,9 +424,10 @@
 					this.isDoubleTap = true;
 				}
 			},
-			doubleTap: function($zoomTarget){
-				if(this.isDoubleTap){
-					clearTimeout(this.destoryTimer);
+			doubleTap: function(){
+				console.log(this.isDoubleTap);
+				if(this.isDoubleTap && this.setting.isFullScreen && !this.isSliding && !this.isScaling){
+
 					// console.log(this.destoryTimer);
 					if(this.isScale){
 						//重置finalScale,和moveX，moveY
@@ -420,43 +443,55 @@
 						this.imgMoveX = 0;
 						this.isScale = true;
 					}
-					this.transform(3 , this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
-
-					$zoomTarget = null;
-					
+					this.transform(3 , {x: this.imgMoveX, y: this.imgMoveY, scale: this.finalScale}, this.$li.eq(this.indexNow));
+				}
+				if(this.isDoubleTap){
+					clearTimeout(this.destoryTimer);
 					this.isDoubleTap = false;
-				}
+				} 
+
+				
 			},	
-			resetSliderPosition: function(){
-				if(!this.isSliding) return;
+			resetSliderPosition: (function(){
+				var timer = null;
+				return function(){
+					var that = this;
+					if(this.isScale) return;
 
-				var l = this.moveLengthX;
-				var canMovePre =  this.indexNow != 0 || this.setting.isLoop,
-					canMoveNext = this.indexNow != this.liLength - 1 || this.setting.isLoop;
-
-				if(l < 0 && Math.abs(l) > 80 && canMoveNext){
-					console.log('moveToLeft');
-					this.movenext();
-				}else if(l > 0 && Math.abs(l) > 80 && canMovePre){
-					console.log('moveToRight');
-					this.moveprev();
-				}else{
-					this.transform(3, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
+					var l = this.moveLengthX;
+					var canMovePre =  this.indexNow != 0 || this.setting.isLoop,
+						canMoveNext = this.indexNow != this.liLength - 1 || this.setting.isLoop;
+					if(l < 0 && Math.abs(l) > 80 && canMoveNext){
+						console.log('moveToLeft');
+						this.movenext();
+					}else if(l > 0 && Math.abs(l) > 80 && canMovePre){
+						console.log('moveToRight');
+						this.moveprev();
+					}else{
+						if(this.setting.isLoop || (!this.setting.isLoop && this.indexNow)) {
+							this.transform(3, {x: -this.liWidth, y: 0}, this.$li.eq(this.circle(this.indexNow - 1)));
+						}
+						this.transform(3, {x: 0, y: 0}, this.$li.eq(this.indexNow));
+						if(this.setting.isLoop || (!this.setting.isLoop && this.indexNow + 1 < this.liLength)){
+							this.transform(3, {x: this.liWidth, y: 0}, this.$li.eq(this.circle(this.indexNow + 1)));
+						}
+					}
+					clearTimeout(timer);
 				}
-			},
-			resetImgPosition: function($zoomTarget){
+				
+			})(),
+			resetImgPosition: function(){
 				if(!this.isScale) return;
 				
-				
-				var $img = $zoomTarget.find('img');
-
+				var $img = this.$li.eq(this.indexNow).find('img');
+				var $zoomTarget = this.$li.eq(this.indexNow);
 				//缩放倍数和状态重置
 				if(this.scale <= this.minScale){
 					//重置finalScale,和moveX，moveY
 					this.finalScale = 1;
 					this.imgMoveY = 0;
 					this.imgMoveX = 0;
-					this.transform(3 , 0, 0, 1, '50% 50%', $zoomTarget);
+					this.transform(3 , {scale:1}, $zoomTarget);
 					this.isScale = false;
 				}else{
 					this.finalScale = this.scale;
@@ -464,7 +499,6 @@
 
 				var imgWidth = $img.width(),
 					imgHeight = $img.height();
-
 
 				//上下边界的界定
 				var set = (this.winHeight - imgHeight)/2;
@@ -498,74 +532,66 @@
 				}
 
 				//移动图片
-				this.transform(3 ,this.imgMoveX, this.imgMoveY, this.finalScale, '50% 50%', $zoomTarget);
+				this.transform(3 ,{x: this.imgMoveX, y: this.imgMoveY,scale: this.finalScale}, $zoomTarget);
 
 			},
 			slide: function(){
 				var that = this;
 
 				this.movenext();
-
 				this.timer = setTimeout(function(){
 					that.slide.call(that);
 				}, 2000);
 			},
 			moveprev: function(){
-				var that = this;
-
-				this.indexNow --;
+				if(!this.setting.isLoop && !this.indexNow) return;
 
 				//移动
-				this.transform(3, -(this.indexNow) * this.liWidth, 0, 1, 'auto', this.$ul);
-
-				if(this.indexNow < 0 && this.setting.isLoop){
-
-					this.indexNow = this.liLength - 1;
-
-					setTimeout(function(){
-						that.transform(0, -(that.indexNow) * that.liWidth, 0, 1, 'auto', that.$ul);
-	 				},200);
-				}
-
-				//点点
-				if(this.setting.hasDot){
-					this.$navli.removeClass('on');
-					this.$navli.eq(this.indexNow).addClass('on');
-				}
+				this.move(this.indexNow - 1);
 
 			},
 			movenext: function(){
-				var that = this;
 
-				this.indexNow ++;
+				if(!this.setting.isLoop && this.indexNow + 1 > this.liLength - 1) return;
 
 				//移动
-				this.transform(3, -(this.indexNow) * this.liWidth, 0, 1,  'auto', this.$ul);
+				this.move(this.indexNow + 1);
 
-				if(this.indexNow >= this.liLength && this.setting.isLoop){
-
-					this.indexNow = 0;
-
-					setTimeout(function(){
-						that.transform( 0, 0, 0, 1, 'auto',that.$ul);
-					},200);
-				}
-
+			},
+			move: function(to){
+				var direction = Math.abs(this.indexNow - to) / (this.indexNow - to);
+				
+				var to = this.circle(to);
+				this.transform(3, {x: this.liWidth * direction, y: 0}, this.$li.eq(this.indexNow));
+				this.transform(3, {x: 0, y: 0}, this.$li.eq(to));
+				if(this.setting.isLoop) this.transform(0, {x: -this.liWidth * direction, y: 0}, this.$li.eq(this.circle(to - direction )));
+				this.indexNow =to;
+				
 				//点点
 				if(this.setting.hasDot){
 					this.$navli.removeClass('on');
-					this.$navli.eq(this.indexNow).addClass('on');
+					this.$navli.eq(to).addClass('on');
 				}
-
 			},
-			transform : function(duration, positionX, positionY, scale, origin, $target){
+			transform : function(duration, transform, $target){
 				$target.css({
-					'transform'         : 'translate3d(' + positionX + 'px, '+ positionY +'px, 0px) scale('+ scale +')', 
-					'-webkit-transform' : 'translate3d(' + positionX + 'px, '+ positionY +'px, 0px) scale('+ scale +')',
-					'transition'        : 'all 0.'+ duration +'s cubic-bezier(0.22, 0.69, 0.72, 0.88)',
-					'-webkit-transition': 'all 0.'+ duration +'s cubic-bezier(0.22, 0.69, 0.72, 0.88)',
-					'transform-origin'  		: origin,
-					'-webkit-transform-origin'  : origin
+					'-webkit-transform' : 'translate3d(' + (transform.x || 0) + 'px, '+ (transform.y || 0) +'px, 0px) scale('+ (transform.scale || 1) +')',
+					'-moz-transform' 	: 'translate3d(' + (transform.x || 0) + 'px, '+ (transform.y || 0) +'px, 0px) scale('+ (transform.scale || 1) +')',
+					'-o-transform' 		: 'translate3d(' + (transform.x || 0) + 'px, '+ (transform.y || 0) +'px, 0px) scale('+ (transform.scale || 1) +')',
+					'-ms-transform' 	: 'translate3d(' + (transform.x || 0) + 'px, '+ (transform.y || 0) +'px, 0px) scale('+ (transform.scale || 1) +')',
+					'transform'         : 'translate3d(' + (transform.x || 0) + 'px, '+ (transform.y || 0) +'px, 0px) scale('+ (transform.scale || 1) +')', 
+
+					'-webkit-transition-duration': '0.'+ duration+'s',
+					'-moz-transition-duration': '0.'+ duration+'s',
+					'-ms-transition-duration': '0.'+ duration+'s',
+					'-o-transition-duration': '0.'+ duration+'s',
+					'transition-duration': '0.'+ duration+'s',
+
+					'-webkit-transform-origin'  : transform.origin || '50% 50% 0',
+					'-moz-transform-origin'  : transform.origin || '50% 50% 0',
+					'-o-transform-origin'   : transform.origin || '50% 50% 0',
+					'-ms-transform-origin'  : transform.origin || '50% 50% 0',
+					'transform-origin'  	: transform.origin || '50% 50% 0'
 				});
 			},
 			fingersDistance:function(touches){
@@ -580,23 +606,23 @@
 
 				return Math.sqrt(disX * disX + disY * disY);
 			},
-			uodateOrientation: function(){
+			updateOrientation: function(){
 
 				var that = this;
 
 				if(this.supportOrientation){
-					that.setW_H(true);
+					that.setup(true);
 				}else{
 
 					clearTimeout(this.resizetTimer);
 					this.resizetTimer = setTimeout(function(){
-						that.setW_H(true);
+						that.setup(true);
 					}, 300);
 				}
 			},
 			appendStyle:function(){
 				if($('#J_slide-style').length <= 0){
-					var $style = $('<style id="J_slide-style">.slide-wrapper li,.slide-wrapper ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0 0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;right:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}.slide-wrapper_n{overflow:hidden;position:relative}.slide-wrapper_n ul{position:absolute;left:0;top:0}.slide-wrapper_n .slide-nav{left:50%;top:auto}.slide-wrapper_n li{float:left;list-style:none}body{margin:0;padding:0}li,ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{float:left;list-style:none;width:100%;height:100%;position:relative}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;left:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}</style>');
+					var $style = $('<style id="J_slide-style">.slide-wrapper{display:none}.slide-wrapper li,.slide-wrapper ul{padding:0;margin:0}.slide-wrapper{overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.7);display:none;position:absolute;left:0;top:0;width:100%;height:100%}.slide-wrapper .slide{height:100%;position:absolute;left:0;top:0}.slide-wrapper li{width:100%;height:100%;position:absolute;left:0;top:0;list-style:none}.slide-wrapper p{padding-left:5px;font-size:16px;line-height:20px;margin:0}.slide-wrapper img{display:block;position:absolute;left:50%;top:50%;display:none;transform-origin:50% 50%;-webkit-transform-origin:50% 50%;-ms-transform-origin:50% 50%;-moz-transform-origin:50% 50%;-o-transform-origin:50% 50%;transform:translate(-50%,-50%);-ms-transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);-o-transform:translate(-50%,-50%);-moz-transform:translate(-50%,-50%)}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0 0}.slide-nav li{position:static;display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}.slide-tips{position:absolute;top:50%;color:#fff;height:20px;width:100%;margin-top:-10px;line-height:20px;display:block;text-align:center;z-index:100}.slide-nav{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:0}.slide-nav li{display:inline-block;margin:3px;border-radius:100px;opacity:.8;background:rgba(255,255,255,.6);width:5px;height:5px}.slide-nav li.on{background:rgba(255,255,255,1)}#J-slide-colse{display:block;width:15%;height:25px;color:#fff;text-align:center;line-height:25px;position:absolute;bottom:5%;left:10px;border-radius:3px;z-index:10000;border:1px solid #3079ed;background-color:#4d90fe}.slide-wrapper_n{overflow:hidden;visibility:hidden}.slide-wrapper_n li,.slide-wrapper_n ul{margin:0;padding:0}.slide-wrapper_n ul{width:100%;position:relative;left:0;top:0}.slide-wrapper_n li{position:absolute;left:0;top:0;list-style:none}.slide-wrapper_n .slide-nav{position:absolute;width:auto;left:50%;bottom:1px;top:auto;transform:translateX(-50%);-ms-transform:translateX(-50%);-webkit-transform:translateX(-50%);-o-transform:translateX(-50%);-moz-transform:translateX(-50%);z-index:100;background:none}.slide-wrapper_n .slide-nav li{position:static;float:left;margin:3px;border-radius:100px;opacity:0.8;background:rgba(255,255,255,0.6);width:5px;height:5px}.slide-wrapper_n .slide-nav li.on{background:rgba(255,255,255,1)}</style>');
 					$('head').append($style);
 				}
 			},
@@ -613,6 +639,14 @@
 					this.$el.off('touchstar touchmove touchend').remove();
 					this.$el = null;
 				}
+			},
+			hide:function(){
+				this.$el.hide();
+			},
+			show:function(indexNow){
+				if(indexNow != undefined) this.indexNow = indexNow;
+				this.setup();
+				this.$el.show();
 			}
 		}
 
@@ -622,6 +656,6 @@
 		Slider.init();
 
 
-		return this;
+		return Slider;
 	};
 })(window.Zepto);
