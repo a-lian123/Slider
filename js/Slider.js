@@ -1,8 +1,8 @@
 /**
 * aouthor: alian wangzhuanglian 654849917@qq.com
-* des    : Slider3.0.0 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform.
-*          Slider3.0.0 是一个我闲暇时间写的zepto插件，用于实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
-* version: 3.0.0
+* des    : Slider3.0.1 is a image slideshow plug-in for Zetop width features like touch,CSS3 transition and CSS3 transform.
+*          Slider3.0.1 是一个我闲暇时间写的zepto插件，用于实现像微博、微信朋友圈展示多张图片的那种效果。可以滑动，缩放。基于JavaScript touch事件，zetop doubleTouch事件，和CSS3。
+* version: 3.0.1
 * depend : Zepto 1.1.6 + width 'zepto event touch ie'mode
 */
 
@@ -15,7 +15,6 @@
 				imgAry  : [],        //图片数组
 				hasDot  : true,      //是否有点点
 				isLoop  : false,     //是否有循环
-				indexNow: 0,         //开始的位置
 				isFullScreen: true,  //是否全屏
 				$el     : null,      //最外层元素
 				autoSlide: false,    //是否自动滑动,自动滑动的情况下, isLoop会设置为true
@@ -63,16 +62,13 @@
 			lastTouchTime : 0,                               //记录上一次点击时间
 			isDoubleTap   : false,                           //是否双击
 			init: function (data, callback){
-				var that = this;
-				this.$el = this.setting.$el || null;
+				$.extend(this.setting, options || {});
+				
+				//是否支持Orientation事件
 				this.supportOrientation  = (typeof window.orientation == "number" && typeof window.onorientationchage == "object");
-
-				if(this.setting.indexNow > 0) this.indexNow = this.setting.indexNow;
-				this.liLength = this.setting.imgAry.length || this.$el.find('li').length;
 				
-				if(this.liLength < 2) this.setting.isLoop = false;
-				
-				if(this.setting.autoSlide && !this.setting.isFullScreen && this.liLength > 1) this.setting.isLoop = true;//如果是自动播放，自动设置为循环播放
+				//插入样式
+				this.appendStyle();
 
 				//渲染
 				this.render();
@@ -103,7 +99,7 @@
 						that.updateOrientation.call(that, e);
 					}, false);
 				}else{
-					$(window).resize(function(e){
+					$(window).on('resize', function(e){
 						that.updateOrientation.call(that, e);
 					}, false);
 				}
@@ -111,15 +107,12 @@
 			//初始化全屏
 			fullScreenRender: function(){
 
-				if(this.$el && this.$el.length > 0){
-					this.show();
-					return
-				};
+				// if(this.$el && this.$el.length > 0){
+				// 	this.show();
+				// 	return
+				// };
 				var that = this,
 					scrollTop = $(window).scrollTop();
-
-				//插入样式
-				this.appendStyle();
 
 				//生成基本元素
 				var html = '<div class="slide-wrapper" id="J-slide-wrapper">'+
@@ -134,13 +127,6 @@
 				//添加进body
 				$('body').append(this.$el);
 
-				//插入图片
-				this.appendImg();
-
-				this.setup();
-
-				
-
 
 				//显示隐藏关闭按钮
 				if(!this.setting.hasCloseBtn){
@@ -148,13 +134,27 @@
 				}
 
 			},
+			//初始化简单幻灯片
+			notfullScreenRender: function(){
+				this.$el = this.setting.$el;
+				this.$el.addClass('slide-wrapper_n');
+				this.setup();
+			},
 			setup: function(){
 				var that = this;
 				this.winWidth = $(window).width();
 				this.winHeight =  $(window).height();
 				this.liWidth = this.setting.isFullScreen ? this.winWidth : this.$el.width();
+				this.liLength = this.setting.imgAry.length || this.$el.find('li').length;
 				this.$ul = this.$ul || this.$el.find('ul').not('.slide-nav');
-				this.$li = this.$li || this.$ul.find('li');
+				this.$li = this.$ul.find('li');
+
+				if(this.liLength < 2) this.setting.isLoop = false;
+				if(this.setting.autoSlide && !this.setting.isFullScreen && this.liLength > 1) this.setting.isLoop = true;//如果是自动播放，自动设置为循环播放
+				if(this.indexNow >= this.liLength) this.indexNow = this.liLength - 1;
+				
+				//添加点点
+				this.appendDot();
 
 				if(this.liLength < 3 && this.setting.isLoop){
 					this.$ul.append(this.$li.eq(0).clone());
@@ -175,9 +175,7 @@
 				if(this.setting.isLoop){
 					that.transform(0,{x: -this.liWidth, y:0 }, this.$li.eq(this.circle(this.indexNow - 1)));
 					that.transform(0,{x: this.liWidth, y: 0}, this.$li.eq(this.circle(this.indexNow + 1)));
-				}
-
-				this.appendStyle();	
+				}	
 
 				if(this.setting.isFullScreen){
 					var scrollTop = $(window).scrollTop();
@@ -189,20 +187,12 @@
 					});
 				}
 
-				//添加点点
-				this.appendDot();
+				
 
 				this.$el.css('visibility','visible');
-
-
 			},	
 			circle: function(index){
 				return (this.liLength + (index % this.liLength)) % this.liLength;
-			},
-			//初始化简单幻灯片
-			notfullScreenRender: function(){
-				this.$el.addClass('slide-wrapper_n');
-				this.setup();
 			},
 			imgOnload: function(e){
 				this.loadNum++;
@@ -237,17 +227,12 @@
 			appendImg: function(){
 				var imgHtml = '',
 				    that = this;
-
 				//生成图片列表
-				for(var i = 0; i < this.liLength; i++){
+				for(var i = 0; i < this.setting.imgAry.length; i++){
 					imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
 				}
-				if(this.liLength == 2){
-					for(var i = 0; i < this.liLength; i++){
-						imgHtml += '<li class="Route"><span class="slide-tips">加载中...</span><img src="'+ this.setting.imgAry[i] + '" /></li>';
-					}
-				}
-				this.$ul.append(imgHtml);
+
+				this.$ul.html(imgHtml);
 				this.$imgs = this.$ul.find('img');
 
 				//设置img事件
@@ -569,6 +554,7 @@
 				
 				//点点
 				if(this.setting.hasDot){
+					if(this.$navli.length <=2) to = to % 2;
 					this.$navli.removeClass('on');
 					this.$navli.eq(to).addClass('on');
 				}
@@ -643,15 +629,18 @@
 			hide:function(){
 				this.$el.hide();
 			},
-			show:function(indexNow){
+			show:function(indexNow,imgAry){
 				if(indexNow != undefined) this.indexNow = indexNow;
+				if(imgAry != undefined) this.setting.imgAry = imgAry;
+
+				//插入图片
+				this.appendImg();
 				this.setup();
 				this.$el.show();
 			}
 		}
 
 
-		$.extend(Slider.setting, options || {});
 
 		Slider.init();
 
