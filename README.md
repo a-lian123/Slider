@@ -9,13 +9,10 @@
 ### 例子
 
 ##### 微信图片展示的效果
-![例子](http://wzlian.me/project/slider/images/1.png)
-点击链接[](http://wzlian.me/project/slider/demo/demo1.html)
+[demo](http://wzlian.me/project/slider/demo/demo1.html)
 
 ##### 简单的幻灯片效果
-![例子](http://wzlian.me/project/slider/images/2.png)
-点击链接[enter link description
-here](http://wzlian.me/project/slider/demo/demo2.html)
+[demo](http://wzlian.me/project/slider/demo/demo2.html)
 
 -------------------------------------------
 ### 调用方法
