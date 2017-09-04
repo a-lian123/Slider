@@ -10,10 +10,10 @@
 
 ##### 微信图片展示的效果
 [demo](http://wzlian.me/project/slider/demo/demo1.html)
-
+![](http://wzlian.me/project/slider/images/qr1.png)
 ##### 简单的幻灯片效果
 [demo](http://wzlian.me/project/slider/demo/demo2.html)
-
+![](http://wzlian.me/project/slider/images/qr2.png)
 -------------------------------------------
 ### 调用方法
 引入`Zepto.js` 和 `slide.js`
