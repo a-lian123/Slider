@@ -9,11 +9,11 @@
 ### 例子
 
 ##### 微信图片展示的效果
-[demo](http://wzlian.me/project/slider/demo/demo1.html)
 <img src="http://wzlian.me/project/slider/images/qr1.png" width = "100" height = "100" alt="qr1" />
+[demo](http://wzlian.me/project/slider/demo/demo1.html)
 ##### 简单的幻灯片效果
-[demo](http://wzlian.me/project/slider/demo/demo2.html)
 <img src="http://wzlian.me/project/slider/images/qr2.png" width = "100" height = "100" alt="qr2" />
+[demo](http://wzlian.me/project/slider/demo/demo2.html)
 -------------------------------------------
 ### 调用方法
 引入`Zepto.js` 和 `slide.js`
